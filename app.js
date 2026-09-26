@@ -2427,108 +2427,958 @@ function clearHistory(){
    WAREHOUSE
 ========================================= */
 
+
+
+/* =========================================
+   WAREHOUSE
+========================================= */
+
 function warehousePage(){
 
-    let content =
-        document.getElementById("content");
+    let content = document.getElementById("content");
 
+    /*
+       Demo warehouse data
+       Existing warehouses + extra realistic locations
+    */
+
+    const warehouseDetails = {
+        "Main Warehouse": {
+            code: "WH-001",
+            type: "Central Storage",
+            capacity: "2,500 Units",
+            manager: "Anjali Kumari",
+            status: "Active"
+        },
+
+        "Production Rack": {
+            code: "WH-002",
+            type: "Production",
+            capacity: "1,200 Units",
+            manager: "Rahul Sharma",
+            status: "Active"
+        },
+
+        "Warehouse 2": {
+            code: "WH-003",
+            type: "General Storage",
+            capacity: "1,800 Units",
+            manager: "Priya Singh",
+            status: "Active"
+        },
+
+        "Raw Material Store": {
+            code: "WH-004",
+            type: "Raw Material",
+            capacity: "3,000 Units",
+            manager: "Aman Kumar",
+            status: "Active"
+        },
+
+        "Finished Goods": {
+            code: "WH-005",
+            type: "Finished Goods",
+            capacity: "2,000 Units",
+            manager: "Neha Verma",
+            status: "Active"
+        },
+
+        "Packaging Unit": {
+            code: "WH-006",
+            type: "Packaging",
+            capacity: "1,000 Units",
+            manager: "Riya Gupta",
+            status: "Active"
+        },
+
+        "Electronics Store": {
+            code: "WH-007",
+            type: "Electronics",
+            capacity: "1,500 Units",
+            manager: "Arjun Mehta",
+            status: "Active"
+        },
+
+        "Furniture Section": {
+            code: "WH-008",
+            type: "Furniture",
+            capacity: "2,200 Units",
+            manager: "Karan Singh",
+            status: "Active"
+        },
+
+        "Dispatch Center": {
+            code: "WH-009",
+            type: "Dispatch",
+            capacity: "1,700 Units",
+            manager: "Vikas Kumar",
+            status: "Active"
+        },
+
+        "Quality Control": {
+            code: "WH-010",
+            type: "Quality Check",
+            capacity: "800 Units",
+            manager: "Sneha Patel",
+            status: "Active"
+        },
+
+        "Cold Storage": {
+            code: "WH-011",
+            type: "Cold Storage",
+            capacity: "1,300 Units",
+            manager: "Pooja Singh",
+            status: "Active"
+        },
+
+        "Spare Parts Store": {
+            code: "WH-012",
+            type: "Spare Parts",
+            capacity: "1,100 Units",
+            manager: "Rohit Das",
+            status: "Active"
+        },
+
+        "North Storage": {
+            code: "WH-013",
+            type: "Regional Storage",
+            capacity: "2,400 Units",
+            manager: "Nikhil Kumar",
+            status: "Active"
+        },
+
+        "South Storage": {
+            code: "WH-014",
+            type: "Regional Storage",
+            capacity: "2,000 Units",
+            manager: "Simran Kaur",
+            status: "Active"
+        },
+
+        "Overflow Warehouse": {
+            code: "WH-015",
+            type: "Overflow",
+            capacity: "3,500 Units",
+            manager: "Mohit Raj",
+            status: "Active"
+        }
+    };
+
+
+    /*
+       Calculate warehouse statistics
+    */
+
+    let totalStock = products.reduce(
+        (sum, p) => sum + Number(p.stock),
+        0
+    );
+
+    let totalProducts = products.length;
+
+    let lowStock = products.filter(
+        p => Number(p.stock) <= Number(p.reorder)
+    ).length;
+
+
+    /*
+       Main Warehouse Page
+    */
 
     content.innerHTML = `
 
-        <div class="section-header">
+        <div class="warehouse-page">
 
-            <h2>
-                Warehouse Locations
-            </h2>
+            <!-- HEADER -->
 
-            <button
-                class="btn btn-primary"
-                onclick="addWarehouse()">
+            <div class="warehouse-heading">
 
-                + Add Warehouse
+                <div>
 
-            </button>
+                    <span class="warehouse-mini-label">
+                        INVENTORY CONTROL CENTER
+                    </span>
+
+                    <h2>
+                        Warehouse Locations
+                    </h2>
+
+                    <p>
+                        Manage storage locations, stock distribution
+                        and warehouse operations.
+                    </p>
+
+                </div>
+
+                <button
+                    class="warehouse-add-btn"
+                    onclick="addWarehouse()">
+
+                    <span>＋</span>
+                    Add Warehouse
+
+                </button>
+
+            </div>
+
+
+            <!-- DECORATIVE STOCK BACKGROUND -->
+
+            <div class="warehouse-visual">
+
+                <div class="visual-grid"></div>
+
+                <div class="visual-line line-a"></div>
+                <div class="visual-line line-b"></div>
+
+                <div class="visual-bar bar-a"></div>
+                <div class="visual-bar bar-b"></div>
+                <div class="visual-bar bar-c"></div>
+                <div class="visual-bar bar-d"></div>
+                <div class="visual-bar bar-e"></div>
+
+                <div class="stock-floating stock-one">
+                    STOCK +24%
+                </div>
+
+                <div class="stock-floating stock-two">
+                    VALUE +16%
+                </div>
+
+                <div class="stock-floating stock-three">
+                    LOSS -4%
+                </div>
+
+                <div class="warehouse-illustration">
+                    🏭
+                </div>
+
+                <div class="visual-content">
+
+                    <span>
+                        SMART WAREHOUSE
+                    </span>
+
+                    <h3>
+                        Track. Store. Deliver.
+                    </h3>
+
+                    <p>
+                        Complete visibility of your inventory
+                        across every location.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- KPI CARDS -->
+
+            <div class="warehouse-kpi-grid">
+
+                <div class="warehouse-kpi-card pink">
+
+                    <div class="kpi-icon">
+                        🏭
+                    </div>
+
+                    <div>
+                        <span>
+                            Total Warehouses
+                        </span>
+
+                        <strong>
+                            ${warehouses.length}
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="warehouse-kpi-card purple">
+
+                    <div class="kpi-icon">
+                        📦
+                    </div>
+
+                    <div>
+                        <span>
+                            Total Products
+                        </span>
+
+                        <strong>
+                            ${totalProducts}
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="warehouse-kpi-card blue">
+
+                    <div class="kpi-icon">
+                        📊
+                    </div>
+
+                    <div>
+                        <span>
+                            Total Stock
+                        </span>
+
+                        <strong>
+                            ${totalStock}
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <div class="warehouse-kpi-card orange">
+
+                    <div class="kpi-icon">
+                        ⚠️
+                    </div>
+
+                    <div>
+                        <span>
+                            Low Stock Items
+                        </span>
+
+                        <strong>
+                            ${lowStock}
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SEARCH -->
+
+            <div class="warehouse-toolbar">
+
+                <div>
+
+                    <h3>
+                        All Warehouse Locations
+                    </h3>
+
+                    <p>
+                        ${warehouses.length} storage locations available
+                    </p>
+
+                </div>
+
+
+                <div class="warehouse-local-search">
+
+                    <span>⌕</span>
+
+                    <input
+                        type="text"
+                        id="warehouseSearch"
+                        placeholder="Search warehouse..."
+                        onkeyup="filterWarehouses()">
+
+                </div>
+
+            </div>
+
+
+            <!-- WAREHOUSE TABLE -->
+
+            <div class="warehouse-table-card">
+
+                <div class="table-responsive">
+
+                    <table class="warehouse-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Warehouse
+                                </th>
+
+                                <th>
+                                    Code
+                                </th>
+
+                                <th>
+                                    Type
+                                </th>
+
+                                <th>
+                                    Products
+                                </th>
+
+                                <th>
+                                    Total Stock
+                                </th>
+
+                                <th>
+                                    Capacity
+                                </th>
+
+                                <th>
+                                    Manager
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="warehouseTableBody">
+
+                            ${renderWarehouseRows(warehouseDetails)}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+            <!-- BOTTOM INFO -->
+
+            <div class="warehouse-bottom-grid">
+
+                <div class="warehouse-info-card">
+
+                    <div class="info-card-icon">
+                        📈
+                    </div>
+
+                    <div>
+
+                        <h4>
+                            Stock Distribution
+                        </h4>
+
+                        <p>
+                            Monitor how inventory is distributed
+                            across different warehouse locations.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="warehouse-info-card">
+
+                    <div class="info-card-icon">
+                        🔄
+                    </div>
+
+                    <div>
+
+                        <h4>
+                            Internal Movement
+                        </h4>
+
+                        <p>
+                            Track stock transfers between
+                            warehouses without changing total stock.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="warehouse-info-card">
+
+                    <div class="info-card-icon">
+                        🔔
+                    </div>
+
+                    <div>
+
+                        <h4>
+                            Smart Alerts
+                        </h4>
+
+                        <p>
+                            Identify low-stock locations and
+                            take action before inventory runs out.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
-
-        <div class="card">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-
-                        <th>
-                            Warehouse
-                        </th>
-
-                        <th>
-                            Products
-                        </th>
-
-                        <th>
-                            Total Stock
-                        </th>
-
-                    </tr>
-
-                </thead>
+    `;
+}
 
 
-                <tbody>
+/* =========================================
+   WAREHOUSE TABLE ROWS
+========================================= */
 
-                    ${warehouses.map(w => {
+function renderWarehouseRows(warehouseDetails){
 
-                        let locationProducts =
-                            products.filter(
-                                p =>
-                                p.location === w
-                            );
+    return warehouses.map((warehouse, index) => {
 
+        let locationProducts = products.filter(
+            p => p.location === warehouse
+        );
 
-                        let total =
-                            locationProducts.reduce(
-                                (sum,p)=>
-                                sum+p.stock,
-                                0
-                            );
+        let total = locationProducts.reduce(
+            (sum, p) => sum + Number(p.stock),
+            0
+        );
 
 
-                        return `
+        /*
+           If newly added warehouse doesn't have
+           predefined details, generate details.
+        */
 
-                        <tr>
+        let info = warehouseDetails[warehouse] || {
 
-                            <td>
-                                🏭 ${w}
-                            </td>
+            code:
+                "WH-" +
+                String(index + 1).padStart(3, "0"),
 
-                            <td>
-                                ${locationProducts.length}
-                            </td>
+            type: "General Storage",
 
-                            <td>
-                                ${total}
-                            </td>
+            capacity: "1,500 Units",
 
-                        </tr>
+            manager: "Warehouse Manager",
 
-                        `;
+            status: "Active"
 
-                    }).join("")}
+        };
 
-                </tbody>
 
-            </table>
+        return `
+
+            <tr
+                class="warehouse-row"
+                data-name="${warehouse.toLowerCase()}">
+
+                <td>
+
+                    <div class="warehouse-name-cell">
+
+                        <div class="warehouse-icon">
+                            🏭
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                ${warehouse}
+                            </strong>
+
+                            <small>
+                                Storage Location
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </td>
+
+
+                <td>
+
+                    <span class="warehouse-code">
+                        ${info.code}
+                    </span>
+
+                </td>
+
+
+                <td>
+
+                    <span class="warehouse-type">
+                        ${info.type}
+                    </span>
+
+                </td>
+
+
+                <td>
+
+                    <strong class="number-blue">
+                        ${locationProducts.length}
+                    </strong>
+
+                </td>
+
+
+                <td>
+
+                    <strong class="stock-number">
+                        ${total}
+                    </strong>
+
+                </td>
+
+
+                <td>
+
+                    <span class="capacity-text">
+                        ${info.capacity}
+                    </span>
+
+                </td>
+
+
+                <td>
+
+                    <span class="manager-text">
+                        ${info.manager}
+                    </span>
+
+                </td>
+
+
+                <td>
+
+                    <span class="warehouse-status">
+                        ● ${info.status}
+                    </span>
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }).join("");
+
+}
+
+
+/* =========================================
+   ADD WAREHOUSE
+========================================= */
+
+function addWarehouse(){
+
+    let modal = document.getElementById("modal");
+
+    modal.innerHTML = `
+
+        <div class="modal-box warehouse-modal">
+
+            <button
+                type="button"
+                class="warehouse-close"
+                onclick="closeModal()">
+
+                ×
+
+            </button>
+
+
+            <div class="warehouse-modal-icon">
+                🏭
+            </div>
+
+
+            <h2>
+                Add New Warehouse
+            </h2>
+
+            <p class="warehouse-modal-subtitle">
+                Create a new storage location for StockSense.
+            </p>
+
+
+            <div class="warehouse-form">
+
+                <div class="form-group">
+
+                    <label>
+                        Warehouse Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="newWarehouseName"
+                        placeholder="e.g. Central Storage"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Location / Area
+                    </label>
+
+                    <input
+                        type="text"
+                        id="newWarehouseLocation"
+                        placeholder="e.g. Building A">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Warehouse Type
+                    </label>
+
+                    <select id="newWarehouseType">
+
+                        <option>
+                            General Storage
+                        </option>
+
+                        <option>
+                            Raw Material
+                        </option>
+
+                        <option>
+                            Finished Goods
+                        </option>
+
+                        <option>
+                            Production
+                        </option>
+
+                        <option>
+                            Dispatch
+                        </option>
+
+                        <option>
+                            Cold Storage
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Capacity
+                    </label>
+
+                    <input
+                        type="number"
+                        id="newWarehouseCapacity"
+                        placeholder="e.g. 1500"
+                        min="1">
+
+                </div>
+
+
+                <div class="warehouse-form-actions">
+
+                    <button
+                        type="button"
+                        class="warehouse-cancel-btn"
+                        onclick="closeModal()">
+
+                        Cancel
+
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="warehouse-save-btn"
+                        onclick="saveWarehouse()">
+
+                        + Add Warehouse
+
+                    </button>
+
+                </div>
+
+            </div>
 
         </div>
 
     `;
 
+    modal.style.display = "flex";
+
 }
 
 
+/* =========================================
+   SAVE WAREHOUSE
+========================================= */
+
+function saveWarehouse(){
+
+    let name =
+        document
+        .getElementById("newWarehouseName")
+        .value
+        .trim();
+
+
+    let location =
+        document
+        .getElementById("newWarehouseLocation")
+        .value
+        .trim();
+
+
+    let type =
+        document
+        .getElementById("newWarehouseType")
+        .value;
+
+
+    let capacity =
+        document
+        .getElementById("newWarehouseCapacity")
+        .value;
+
+
+    if(!name){
+
+        alert(
+            "Please enter warehouse name."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       Check duplicate warehouse
+    */
+
+    let exists = warehouses.some(
+        w =>
+        w.toLowerCase() === name.toLowerCase()
+    );
+
+
+    if(exists){
+
+        alert(
+            "Warehouse already exists."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       Add warehouse
+    */
+
+    warehouses.push(name);
+
+
+    /*
+       Save data
+    */
+
+    saveData();
+
+
+    /*
+       Close modal
+    */
+
+    closeModal();
+
+
+    /*
+       Refresh warehouse page
+    */
+
+    warehousePage();
+
+
+    /*
+       Success message
+    */
+
+    if(typeof showToast === "function"){
+
+        showToast(
+            `${name} added successfully.`,
+            "success"
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   WAREHOUSE SEARCH
+========================================= */
+
+function filterWarehouses(){
+
+    let input =
+        document
+        .getElementById("warehouseSearch");
+
+
+    if(!input){
+        return;
+    }
+
+
+    let value =
+        input.value
+        .toLowerCase()
+        .trim();
+
+
+    let rows =
+        document.querySelectorAll(
+            ".warehouse-row"
+        );
+
+
+    rows.forEach(row => {
+
+        let name =
+            row
+            .getAttribute("data-name")
+            .toLowerCase();
+
+
+        if(name.includes(value)){
+
+            row.style.display = "";
+
+        }
+        else{
+
+            row.style.display = "none";
+
+        }
+
+    });
+
+}
 function addWarehouse(){
 
     let name =
@@ -2687,7 +3537,114 @@ function addWarehouse(){
 
 
 // }
+/* =========================================
+   GLOBAL PRODUCT SEARCH
+========================================= */
 
+function globalSearch(){
+
+    let input =
+        document.getElementById("search");
+
+    if(!input){
+        return;
+    }
+
+    let value =
+        input.value
+        .toLowerCase()
+        .trim();
+
+
+    /*
+       If search is empty,
+       don't do anything
+    */
+
+    if(!value){
+
+        return;
+
+    }
+
+
+    /*
+       Find product by:
+       1. Product name
+       2. SKU
+       3. Category
+       4. Location
+    */
+
+    let result =
+        products.filter(p =>
+
+            p.name
+            .toLowerCase()
+            .includes(value)
+
+            ||
+
+            p.sku
+            .toLowerCase()
+            .includes(value)
+
+            ||
+
+            p.category
+            .toLowerCase()
+            .includes(value)
+
+            ||
+
+            p.location
+            .toLowerCase()
+            .includes(value)
+
+        );
+
+
+    /*
+       Open Products page
+    */
+
+    showPage("products");
+
+
+    /*
+       Filter product rows
+    */
+
+    setTimeout(() => {
+
+        let rows =
+            document.querySelectorAll(
+                "#content table tbody tr"
+            );
+
+
+        rows.forEach(row => {
+
+            let text =
+                row.innerText.toLowerCase();
+
+
+            if(text.includes(value)){
+
+                row.style.display = "";
+
+            }
+            else{
+
+                row.style.display = "none";
+
+            }
+
+        });
+
+    }, 50);
+
+}
 
 /* =========================================
    FANCY INVENTORY MANAGER PROFILE
