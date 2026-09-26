@@ -4,6 +4,228 @@
 
 
 /* =========================================
+   API LAYER  —  Backend ↔ Frontend Bridge
+   All calls go to http://localhost:3000/api
+   Falls back to localStorage if server down
+========================================= */
+
+const API = "http://localhost:3000/api";
+let   USE_API = false;   // set true after health check passes
+
+// ── Health check on load ──────────────────────────────
+async function checkBackend(){
+    try {
+        const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(2000) });
+        if(r.ok){
+            USE_API = true;
+            setApiStatus(true);
+            await syncFromBackend();   // load fresh data from DB
+        } else {
+            setApiStatus(false);
+        }
+    } catch(e){
+        setApiStatus(false);
+    }
+}
+
+function setApiStatus(online){
+    const dot  = document.getElementById("api-dot");
+    const text = document.getElementById("api-text");
+    if(!dot) return;
+    if(online){
+        dot.textContent  = "🟢";
+        text.textContent = "Backend Online";
+        dot.closest("div").style.color = "#12b76a";
+    } else {
+        dot.textContent  = "🔴";
+        text.textContent = "Offline (localStorage)";
+        dot.closest("div").style.color = "#f97066";
+    }
+}
+
+// ── Pull all data from DB into local arrays ───────────
+async function syncFromBackend(){
+    try {
+        const [pw, pp, pr, pd, pt, pa, ph] = await Promise.all([
+            apiFetch("/warehouses"),
+            apiFetch("/products"),
+            apiFetch("/receipts"),
+            apiFetch("/deliveries"),
+            apiFetch("/transfers"),
+            apiFetch("/adjustments"),
+            apiFetch("/history")
+        ]);
+
+        if(pw) warehouses = pw.map(w => w.name);
+        if(pp) products   = pp.map(normaliseProduct);
+        if(pr) receipts   = pr.map(normaliseReceipt);
+        if(pd) deliveries = pd.map(normaliseDelivery);
+        if(pt) transfers  = pt.map(normaliseTransfer);
+        if(pa) adjustments= pa;
+        if(ph) history    = ph.map(h => ({
+            id:      h.id,
+            type:    h.operation,
+            details: `${h.product_name}: ${h.quantity > 0 ? "+" : ""}${h.quantity} ${h.unit}`,
+            date:    h.created_at
+        }));
+
+        saveData();   // mirror to localStorage as cache
+    } catch(e){
+        console.warn("syncFromBackend failed:", e);
+    }
+}
+
+// ── Generic fetch wrapper ─────────────────────────────
+async function apiFetch(path, options = {}){
+    const res = await fetch(API + path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+    });
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error || "API error");
+    return json.data;
+}
+
+// ── Normalise DB rows → app shape ────────────────────
+function normaliseProduct(p){
+    return {
+        id:       p.id,
+        name:     p.name,
+        sku:      p.sku,
+        category: p.category || "",
+        unit:     p.unit     || "pcs",
+        stock:    p.stock    || 0,
+        reorder:  p.reorder_level || 0,
+        location: p.location || "Main Warehouse"
+    };
+}
+
+function normaliseReceipt(r){
+    return {
+        id:            r.id,
+        ref:           r.ref,
+        supplier:      r.supplier,
+        productId:     r.product_id,
+        quantity:      r.quantity,
+        status:        r.status,
+        scheduledDate: r.scheduled_date,
+        destWarehouse: r.dest_warehouse,
+        createdAt:     r.created_at
+    };
+}
+
+function normaliseDelivery(d){
+    return {
+        id:            d.id,
+        ref:           d.ref,
+        customer:      d.customer,
+        productId:     d.product_id,
+        quantity:      d.quantity,
+        status:        d.status,
+        scheduledDate: d.scheduled_date,
+        createdAt:     d.created_at
+    };
+}
+
+function normaliseTransfer(t){
+    return {
+        id:            t.id,
+        ref:           t.ref,
+        productId:     t.product_id,
+        quantity:      t.quantity,
+        from:          t.from_warehouse,
+        to:            t.to_warehouse,
+        status:        t.status,
+        scheduledDate: t.scheduled_date,
+        createdAt:     t.created_at
+    };
+}
+
+
+/* =========================================
+   API ACTION WRAPPERS
+   Each calls backend if online, else falls
+   back to the existing localStorage logic.
+========================================= */
+
+// ── Products ─────────────────────────────────────────
+async function apiCreateProduct(data){
+    if(!USE_API) return null;
+    return apiFetch("/products", { method:"POST", body: JSON.stringify(data) });
+}
+async function apiUpdateProduct(id, data){
+    if(!USE_API) return null;
+    return apiFetch(`/products/${id}`, { method:"PUT", body: JSON.stringify(data) });
+}
+async function apiDeleteProduct(id){
+    if(!USE_API) return null;
+    return apiFetch(`/products/${id}`, { method:"DELETE" });
+}
+
+// ── Warehouses ───────────────────────────────────────
+async function apiCreateWarehouse(name){
+    if(!USE_API) return null;
+    return apiFetch("/warehouses", { method:"POST", body: JSON.stringify({ name }) });
+}
+
+// ── Receipts ─────────────────────────────────────────
+async function apiCreateReceipt(data){
+    if(!USE_API) return null;
+    return apiFetch("/receipts", { method:"POST", body: JSON.stringify(data) });
+}
+async function apiValidateReceipt(id){
+    if(!USE_API) return null;
+    return apiFetch(`/receipts/${id}/validate`, { method:"PUT" });
+}
+async function apiCancelReceipt(id){
+    if(!USE_API) return null;
+    return apiFetch(`/receipts/${id}/cancel`, { method:"PUT" });
+}
+
+// ── Deliveries ───────────────────────────────────────
+async function apiCreateDelivery(data){
+    if(!USE_API) return null;
+    return apiFetch("/deliveries", { method:"POST", body: JSON.stringify(data) });
+}
+async function apiValidateDelivery(id){
+    if(!USE_API) return null;
+    return apiFetch(`/deliveries/${id}/validate`, { method:"PUT" });
+}
+async function apiCancelDelivery(id){
+    if(!USE_API) return null;
+    return apiFetch(`/deliveries/${id}/cancel`, { method:"PUT" });
+}
+
+// ── Transfers ────────────────────────────────────────
+async function apiCreateTransfer(data){
+    if(!USE_API) return null;
+    return apiFetch("/transfers", { method:"POST", body: JSON.stringify(data) });
+}
+async function apiValidateTransfer(id){
+    if(!USE_API) return null;
+    return apiFetch(`/transfers/${id}/validate`, { method:"PUT" });
+}
+async function apiCancelTransfer(id){
+    if(!USE_API) return null;
+    return apiFetch(`/transfers/${id}/cancel`, { method:"PUT" });
+}
+
+// ── Adjustments ──────────────────────────────────────
+async function apiCreateAdjustment(data){
+    if(!USE_API) return null;
+    return apiFetch("/adjustments", { method:"POST", body: JSON.stringify(data) });
+}
+
+// ── Helper: re-sync after any mutation ───────────────
+async function refreshData(){
+    if(USE_API) await syncFromBackend();
+}
+
+// ── Boot: run health check ────────────────────────────
+checkBackend();
+
+
+/* =========================================
    DATA
 ========================================= */
 
@@ -993,69 +1215,45 @@ function openProductModal(id=null){
 }
 
 
-function saveProduct(event,id){
+async function saveProduct(event,id){
 
     event.preventDefault();
 
-
-    let form =
-        new FormData(event.target);
-
+    let form = new FormData(event.target);
 
     let data = {
-
-        name:form.get("name"),
-
-        sku:form.get("sku"),
-
-        category:form.get("category"),
-
-        unit:form.get("unit"),
-
-        stock:Number(form.get("stock")),
-
-        reorder:Number(form.get("reorder")),
-
-        location:form.get("location")
-
+        name:     form.get("name"),
+        sku:      form.get("sku"),
+        category: form.get("category"),
+        unit:     form.get("unit"),
+        stock:    Number(form.get("stock")),
+        reorder:  Number(form.get("reorder")),
+        location: form.get("location")
     };
 
-
-    if(id){
-
-        let p =
-            getProduct(id);
-
-        Object.assign(p,data);
-
-        addHistory(
-            "Product Updated",
-            data.name
-        );
-
+    try {
+        if(id){
+            // Update existing
+            await apiUpdateProduct(id, data);
+            let p = getProduct(id);
+            Object.assign(p, data);
+            addHistory("Product Updated", data.name);
+        } else {
+            // Create new
+            const result = await apiCreateProduct(data);
+            data.id = result ? result.id : generateID();
+            products.push(data);
+            addHistory("Product Created", data.name);
+        }
+    } catch(e) {
+        showToast(e.message || "Failed to save product.", "error");
+        return;
     }
 
-    else{
-
-        data.id =
-            generateID();
-
-        products.push(data);
-
-        addHistory(
-            "Product Created",
-            data.name
-        );
-
-    }
-
-
+    await refreshData();
     saveData();
-
     closeModal();
-
     productsPage();
-
 }
 
 
@@ -1068,24 +1266,28 @@ function editProduct(id){
 
 function deleteProduct(id){
 
-    let p =
-        getProduct(id);
+    let p = getProduct(id);
 
+    confirmAction(`Delete product <b>${p.name}</b>? This cannot be undone.`, async () => {
 
-    if(confirm(
-        "Delete this product?"
-    )){
+        try {
+            await apiDeleteProduct(id);
+        } catch(e) { /* offline — continue */ }
 
-        products =
-            products.filter(
-                x => x.id !== id
-            );
+        products = products.filter(x => x.id !== id);
+        addHistory("Product Deleted", p.name);
+        await refreshData();
+        saveData();
+        productsPage();
+        showToast(`${p.name} deleted.`, "warning");
+    });
+}
 
-
-        addHistory(
-            "Product Deleted",
-            p.name
-        );
+function _deleteProductOLD_UNUSED(id){
+    let p = getProduct(id);
+    if(confirm("Delete this product?")){
+        products = products.filter(x => x.id !== id);
+        addHistory("Product Deleted", p.name);
 
 
         saveData();
@@ -1250,13 +1452,12 @@ function openReceiptModal(){
 }
 
 
-function saveReceipt(event){
+async function saveReceipt(event){
 
     event.preventDefault();
 
     let form = new FormData(event.target);
-
-    let qty = Number(form.get("quantity"));
+    let qty  = Number(form.get("quantity"));
 
     if(qty <= 0){
         showToast("Quantity must be greater than 0.", "error");
@@ -1264,10 +1465,11 @@ function saveReceipt(event){
     }
 
     let status = form.get("status");
+    let ref    = nextRef("WH/IN");
 
     let receipt = {
         id:            generateID(),
-        ref:           nextRef("WH/IN"),
+        ref:           ref,
         supplier:      form.get("supplier"),
         productId:     Number(form.get("product")),
         quantity:      qty,
@@ -1277,26 +1479,41 @@ function saveReceipt(event){
         createdAt:     new Date().toLocaleString()
     };
 
+    try {
+        const result = await apiCreateReceipt({
+            ref:           ref,
+            supplier:      receipt.supplier,
+            productId:     receipt.productId,
+            quantity:      qty,
+            status:        status,
+            scheduledDate: receipt.scheduledDate,
+            destWarehouse: receipt.destWarehouse
+        });
+        if(result) receipt.id = result.id;
+    } catch(e) {
+        showToast(e.message || "Backend error saving receipt.", "error");
+    }
+
     receipts.push(receipt);
 
-    // If directly marked Done, apply stock immediately
     if(status === "Done"){
         let p = getProduct(receipt.productId);
         if(p){
             p.stock += qty;
             p.location = receipt.destWarehouse;
-            addHistory("Receipt", `[${receipt.ref}] Received ${qty} ${p.unit} of ${p.name} from ${receipt.supplier}`);
+            addHistory("Receipt", `[${ref}] Received ${qty} ${p.unit} of ${p.name} from ${receipt.supplier}`);
         }
     }
 
+    await refreshData();
     saveData();
     closeModal();
     receiptsPage();
-    showToast(`Receipt ${receipt.ref} created successfully.`, "success");
+    showToast(`Receipt ${ref} created successfully.`, "success");
 }
 
 
-function validateReceipt(id){
+async function validateReceipt(id){
 
     let r = receipts.find(x => x.id === id);
     let p = getProduct(r.productId);
@@ -1306,28 +1523,36 @@ function validateReceipt(id){
         return;
     }
 
+    try {
+        await apiValidateReceipt(r.id);
+    } catch(e) {
+        showToast(e.message || "Validation failed.", "error");
+        return;
+    }
+
     p.stock += r.quantity;
     if(r.destWarehouse) p.location = r.destWarehouse;
-
     r.status = "Done";
     r.validatedAt = new Date().toLocaleString();
-
     addHistory("Receipt Validated", `[${r.ref}] +${r.quantity} ${p.unit} of ${p.name} from ${r.supplier}`);
 
+    await refreshData();
     saveData();
     receiptsPage();
     showToast(`Receipt ${r.ref} validated. Stock updated: +${r.quantity} ${p.unit}.`, "success");
 }
 
 
-function cancelReceipt(id){
+async function cancelReceipt(id){
 
     let r = receipts.find(x => x.id === id);
 
-    confirmAction(`Cancel receipt <b>${r.ref}</b> from <b>${r.supplier}</b>? No stock will be added.`, () => {
+    confirmAction(`Cancel receipt <b>${r.ref}</b> from <b>${r.supplier}</b>? No stock will be added.`, async () => {
 
+        try { await apiCancelReceipt(r.id); } catch(e) { /* offline */ }
         r.status = "Cancelled";
         addHistory("Receipt Cancelled", `[${r.ref}] Cancelled – ${r.supplier}`);
+        await refreshData();
         saveData();
         receiptsPage();
         showToast(`Receipt ${r.ref} has been cancelled.`, "warning");
@@ -1488,97 +1713,85 @@ function openDeliveryModal(){
 }
 
 
-function saveDelivery(event){
+async function saveDelivery(event){
 
     event.preventDefault();
 
-    let form     = new FormData(event.target);
-    let p        = getProduct(form.get("product"));
-    let qty      = Number(form.get("quantity"));
-    let status   = form.get("status");
+    let form   = new FormData(event.target);
+    let p      = getProduct(form.get("product"));
+    let qty    = Number(form.get("quantity"));
+    let status = form.get("status");
+    let ref    = nextRef("WH/OUT");
 
-    // Validation
-    if(!p){
-        showToast("Selected product not found.", "error");
-        return;
-    }
-
-    if(qty <= 0){
-        showToast("Quantity must be greater than 0.", "error");
-        return;
-    }
-
-    // Stock-check: only block if trying to validate immediately
+    if(!p){ showToast("Selected product not found.", "error"); return; }
+    if(qty <= 0){ showToast("Quantity must be greater than 0.", "error"); return; }
     if(status === "Done" && p.stock < qty){
-        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}, Requested: ${qty} ${p.unit}.`, "error");
-        return;
+        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}.`, "error"); return;
     }
 
     let delivery = {
         id:            generateID(),
-        ref:           nextRef("WH/OUT"),
+        ref:           ref,
         customer:      form.get("customer"),
         productId:     Number(form.get("product")),
         quantity:      qty,
         scheduledDate: form.get("scheduledDate"),
-        srcWarehouse:  form.get("srcWarehouse"),
         status:        status,
         createdAt:     new Date().toLocaleString()
     };
 
-    deliveries.push(delivery);
+    try {
+        const result = await apiCreateDelivery({
+            ref, customer: delivery.customer,
+            productId: delivery.productId, quantity: qty,
+            status, scheduledDate: delivery.scheduledDate
+        });
+        if(result) delivery.id = result.id;
+    } catch(e) { showToast(e.message || "Backend error.", "error"); }
 
-    if(delivery.status === "Done"){
+    deliveries.push(delivery);
+    if(status === "Done"){
         p.stock -= qty;
-        addHistory("Delivery", `[${delivery.ref}] Delivered ${qty} ${p.unit} of ${p.name} to ${delivery.customer}`);
+        addHistory("Delivery", `[${ref}] Delivered ${qty} ${p.unit} of ${p.name} to ${delivery.customer}`);
     }
 
-    saveData();
-    closeModal();
-    deliveriesPage();
-    showToast(`Delivery ${delivery.ref} created successfully.`, "success");
+    await refreshData();
+    saveData(); closeModal(); deliveriesPage();
+    showToast(`Delivery ${ref} created successfully.`, "success");
 }
 
 
-function validateDelivery(id){
+async function validateDelivery(id){
 
     let d = deliveries.find(x => x.id === id);
     let p = getProduct(d.productId);
 
-    if(!p){
-        showToast("Product no longer exists in the system.", "error");
-        return;
+    if(!p){ showToast("Product no longer exists.", "error"); return; }
+    if(p.stock < d.quantity){
+        showToast(`Cannot validate: Only ${p.stock} ${p.unit} available, ${d.quantity} needed.`, "error"); return;
     }
 
-    if(p.stock < d.quantity){
-        showToast(`Cannot validate: Only ${p.stock} ${p.unit} available, but ${d.quantity} ${p.unit} needed.`, "error");
-        return;
-    }
+    try {
+        await apiValidateDelivery(d.id);
+    } catch(e) { showToast(e.message || "Validation failed.", "error"); return; }
 
     p.stock -= d.quantity;
-    d.status = "Done";
-    d.validatedAt = new Date().toLocaleString();
-
+    d.status = "Done"; d.validatedAt = new Date().toLocaleString();
     addHistory("Delivery Validated", `[${d.ref}] −${d.quantity} ${p.unit} of ${p.name} → ${d.customer}`);
 
-    saveData();
-    deliveriesPage();
-    showToast(`Delivery ${d.ref} validated. Stock updated: −${d.quantity} ${p.unit}.`, "success");
+    await refreshData(); saveData(); deliveriesPage();
+    showToast(`Delivery ${d.ref} validated. Stock: −${d.quantity} ${p.unit}.`, "success");
 }
 
 
-function cancelDelivery(id){
-
+async function cancelDelivery(id){
     let d = deliveries.find(x => x.id === id);
-
-    confirmAction(`Cancel delivery <b>${d.ref}</b> to <b>${d.customer}</b>? No stock will be deducted.`, () => {
-
+    confirmAction(`Cancel delivery <b>${d.ref}</b> to <b>${d.customer}</b>? No stock deducted.`, async () => {
+        try { await apiCancelDelivery(d.id); } catch(e) { /* offline */ }
         d.status = "Cancelled";
         addHistory("Delivery Cancelled", `[${d.ref}] Cancelled – ${d.customer}`);
-        saveData();
-        deliveriesPage();
-        showToast(`Delivery ${d.ref} has been cancelled.`, "warning");
-
+        await refreshData(); saveData(); deliveriesPage();
+        showToast(`Delivery ${d.ref} cancelled.`, "warning");
     });
 }
 
@@ -1741,113 +1954,82 @@ function openTransferModal(){
 }
 
 
-function saveTransfer(event){
+async function saveTransfer(event){
 
     event.preventDefault();
 
-    let form     = new FormData(event.target);
-    let p        = getProduct(form.get("product"));
-    let from     = form.get("from");
-    let to       = form.get("to");
-    let qty      = Number(form.get("quantity"));
-    let status   = form.get("status");
+    let form   = new FormData(event.target);
+    let p      = getProduct(form.get("product"));
+    let from   = form.get("from");
+    let to     = form.get("to");
+    let qty    = Number(form.get("quantity"));
+    let status = form.get("status");
+    let ref    = nextRef("WH/INT");
 
-    // ── Validation ─────────────────────────────────────────────
-    if(!p){
-        showToast("Selected product not found.", "error");
-        return;
-    }
-
-    if(qty <= 0){
-        showToast("Quantity must be greater than 0.", "error");
-        return;
-    }
-
-    if(from === to){
-        showToast("Source and destination locations cannot be the same.", "error");
-        return;
-    }
-
-    // Note: We intentionally do NOT require p.location === from
-    // (multi-product-per-location systems allow flexible routing)
+    if(!p){ showToast("Product not found.", "error"); return; }
+    if(qty <= 0){ showToast("Quantity must be > 0.", "error"); return; }
+    if(from === to){ showToast("Source and destination cannot be the same.", "error"); return; }
     if(status === "Done" && p.stock < qty){
-        showToast(`Insufficient stock for immediate validation! Available: ${p.stock} ${p.unit}.`, "error");
-        return;
+        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}.`, "error"); return;
     }
-    // ────────────────────────────────────────────────────────────
 
     let transfer = {
-        id:            generateID(),
-        ref:           nextRef("WH/INT"),
-        productId:     Number(form.get("product")),
-        quantity:      qty,
-        from:          from,
-        to:            to,
+        id: generateID(), ref, productId: Number(form.get("product")),
+        quantity: qty, from, to,
         scheduledDate: form.get("scheduledDate"),
-        status:        status,
-        createdAt:     new Date().toLocaleString()
+        status, createdAt: new Date().toLocaleString()
     };
 
-    transfers.push(transfer);
+    try {
+        const result = await apiCreateTransfer({
+            ref, productId: transfer.productId, quantity: qty,
+            from, to, status, scheduledDate: transfer.scheduledDate
+        });
+        if(result) transfer.id = result.id;
+    } catch(e) { showToast(e.message || "Backend error.", "error"); }
 
-    if(transfer.status === "Done"){
-        // Transfer: stock stays same (just location moves), unless you want to track per-location stock
+    transfers.push(transfer);
+    if(status === "Done"){
         p.location = to;
-        addHistory("Internal Transfer", `[${transfer.ref}] ${qty} ${p.unit} of ${p.name}: ${from} → ${to}`);
+        addHistory("Internal Transfer", `[${ref}] ${qty} ${p.unit} of ${p.name}: ${from} → ${to}`);
     }
 
-    saveData();
-    closeModal();
-    transfersPage();
-    showToast(`Transfer ${transfer.ref} created successfully.`, "success");
+    await refreshData(); saveData(); closeModal(); transfersPage();
+    showToast(`Transfer ${ref} created successfully.`, "success");
 }
 
 
-function validateTransfer(id){
+async function validateTransfer(id){
 
     let t = transfers.find(x => x.id === id);
     let p = getProduct(t.productId);
 
-    if(!p){
-        showToast("Product no longer exists in the system.", "error");
-        return;
-    }
-
-    if(t.from === t.to){
-        showToast("Cannot transfer: source and destination are the same location.", "error");
-        return;
-    }
-
+    if(!p){ showToast("Product no longer exists.", "error"); return; }
+    if(t.from === t.to){ showToast("Same source and destination.", "error"); return; }
     if(p.stock < t.quantity){
-        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}, Required: ${t.quantity} ${p.unit}.`, "error");
-        return;
+        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}.`, "error"); return;
     }
 
-    // Apply the transfer
-    p.location = t.to;
-    t.status   = "Done";
-    t.validatedAt = new Date().toLocaleString();
+    try {
+        await apiValidateTransfer(t.id);
+    } catch(e) { showToast(e.message || "Validation failed.", "error"); return; }
 
+    p.location = t.to; t.status = "Done"; t.validatedAt = new Date().toLocaleString();
     addHistory("Transfer Validated", `[${t.ref}] ${t.quantity} ${p.unit} of ${p.name}: ${t.from} → ${t.to}`);
 
-    saveData();
-    transfersPage();
-    showToast(`Transfer ${t.ref} validated. ${p.name} moved to ${t.to}.`, "success");
+    await refreshData(); saveData(); transfersPage();
+    showToast(`Transfer ${t.ref} validated. ${p.name} → ${t.to}.`, "success");
 }
 
 
-function cancelTransfer(id){
-
+async function cancelTransfer(id){
     let t = transfers.find(x => x.id === id);
-
-    confirmAction(`Cancel transfer <b>${t.ref}</b>? No stock movement will occur.`, () => {
-
+    confirmAction(`Cancel transfer <b>${t.ref}</b>? No stock movement will occur.`, async () => {
+        try { await apiCancelTransfer(t.id); } catch(e) { /* offline */ }
         t.status = "Cancelled";
         addHistory("Transfer Cancelled", `[${t.ref}] Cancelled`);
-        saveData();
-        transfersPage();
-        showToast(`Transfer ${t.ref} has been cancelled.`, "warning");
-
+        await refreshData(); saveData(); transfersPage();
+        showToast(`Transfer ${t.ref} cancelled.`, "warning");
     });
 }
 

@@ -1,13 +1,11 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>StockSense - Inventory Management System</title>
-
+    <meta name="description" content="StockSense - Real-time inventory management: receipts, deliveries, transfers, adjustments.">
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -22,39 +20,56 @@
             📦 <span>StockSense</span>
         </div>
 
-        <button onclick="showPage('dashboard')">
+        <!-- Backend status indicator -->
+        <div id="api-status" style="
+            margin: 0 10px 16px;
+            padding: 7px 12px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #1d2939;
+            color: #667085;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        ">
+            <span id="api-dot">⚪</span>
+            <span id="api-text">Connecting...</span>
+        </div>
+
+        <button onclick="showPage('dashboard')" id="nav-dashboard">
             🏠 Dashboard
         </button>
 
-        <button onclick="showPage('products')">
+        <button onclick="showPage('products')" id="nav-products">
             📦 Products
         </button>
 
-        <button onclick="showPage('receipts')">
+        <button onclick="showPage('receipts')" id="nav-receipts">
             📥 Receipts
         </button>
 
-        <button onclick="showPage('deliveries')">
+        <button onclick="showPage('deliveries')" id="nav-deliveries">
             📤 Deliveries
         </button>
 
-        <button onclick="showPage('transfers')">
+        <button onclick="showPage('transfers')" id="nav-transfers">
             🔄 Internal Transfers
         </button>
 
-        <button onclick="showPage('adjustments')">
+        <button onclick="showPage('adjustments')" id="nav-adjustments">
             ⚖️ Adjustments
         </button>
 
-        <button onclick="showPage('history')">
+        <button onclick="showPage('history')" id="nav-history">
             📜 Move History
         </button>
 
-        <button onclick="showPage('warehouse')">
+        <button onclick="showPage('warehouse')" id="nav-warehouse">
             🏭 Warehouse
         </button>
 
-        <button onclick="showPage('profile')">
+        <button onclick="showPage('profile')" id="nav-profile">
             👤 Profile
         </button>
 
@@ -85,7 +100,6 @@
 
         <!-- Dynamic Page Content -->
         <section id="content"></section>
-        
 
     </main>
 
@@ -102,7 +116,7 @@
             onclick="closeModal()"
             aria-label="Close"
         >
-            ×
+            &times;
         </span>
 
         <div id="modalContent"></div>
@@ -117,4 +131,3 @@
 
 </body>
 </html>
-```
