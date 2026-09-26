@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Test Product",
+    "sku": "TEST-001",
+    "category": "General",
+    "unit": "pcs",
+    "stock": 10,
+    "reorder": 5,
+    "location": "Main Warehouse",
+    "id": 1790402665737
+  }
+]
