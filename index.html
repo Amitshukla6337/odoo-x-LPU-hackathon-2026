@@ -1,10 +1,12 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>StockSense</title>
+    <title>StockSense - Inventory Management System</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -13,12 +15,11 @@
 
 <div class="app">
 
-    <!-- SIDEBAR -->
+    <!-- Sidebar Navigation -->
     <aside class="sidebar">
 
         <div class="logo">
-            📦
-            <span>StockSense</span>
+            📦 <span>StockSense</span>
         </div>
 
         <button onclick="showPage('dashboard')">
@@ -60,9 +61,10 @@
     </aside>
 
 
-    <!-- MAIN -->
+    <!-- Main Application -->
     <main class="main">
 
+        <!-- Header -->
         <header>
 
             <div>
@@ -73,30 +75,32 @@
             <input
                 type="text"
                 id="search"
-                placeholder="Search..."
+                placeholder="Search products or SKU..."
                 onkeyup="globalSearch()"
+                aria-label="Search products"
             >
 
         </header>
 
 
-        <!-- CONTENT -->
-        <section id="content hello">
-
-        </section>
+        <!-- Dynamic Page Content -->
+        <section id="content"></section>
 
     </main>
 
 </div>
 
 
-<!-- MODAL -->
-
+<!-- Modal -->
 <div id="modal" class="modal">
 
     <div class="modal-box">
 
-        <span class="close" onclick="closeModal()">
+        <span
+            class="close"
+            onclick="closeModal()"
+            aria-label="Close"
+        >
             ×
         </span>
 
@@ -107,7 +111,9 @@
 </div>
 
 
+<!-- Application JavaScript -->
 <script src="app.js"></script>
 
 </body>
 </html>
+```
