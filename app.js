@@ -616,181 +616,1188 @@ function showPage(page){
    DASHBOARD
 ========================================= */
 
+/* =========================================
+   PREMIUM STOCKSENSE DASHBOARD
+========================================= */
+
 function dashboard(){
 
-    let content =
-        document.getElementById("content");
+    let content = document.getElementById("content");
+
+    /* =========================
+       REAL INVENTORY DATA
+    ========================= */
+
+    let totalStock = products.reduce(
+        (sum, p) => sum + Number(p.stock),
+        0
+    );
+
+    let lowProducts = products.filter(
+        p => Number(p.stock) <= Number(p.reorder)
+    );
+
+    let lowStock = lowProducts.length;
+
+    let pendingReceipts = receipts.filter(
+        r => r.status !== "Done"
+    ).length;
+
+    let pendingDeliveries = deliveries.filter(
+        d => d.status !== "Done"
+    ).length;
+
+    let pendingTransfers = transfers.filter(
+        t => t.status !== "Done"
+    ).length;
 
 
-    let totalStock =
-        products.reduce(
-            (sum,p) => sum + Number(p.stock),
-            0
+    /* =========================
+       CATEGORY STOCK
+    ========================= */
+
+    let categoryStock = {};
+
+    products.forEach(p => {
+
+        let category = p.category || "Other";
+
+        if(!categoryStock[category]){
+            categoryStock[category] = 0;
+        }
+
+        categoryStock[category] += Number(p.stock);
+
+    });
+
+
+    let categoryEntries =
+        Object.entries(categoryStock);
+
+
+    let maxCategoryStock =
+        Math.max(
+            ...categoryEntries.map(
+                x => x[1]
+            ),
+            1
         );
 
 
-    let lowStock =
-        products.filter(
-            p => p.stock <= p.reorder
-        ).length;
+    /* =========================
+       WAREHOUSE STOCK
+    ========================= */
+
+    let warehouseStock = {};
+
+    warehouses.forEach(w => {
+
+        warehouseStock[w] = products
+            .filter(
+                p => p.location === w
+            )
+            .reduce(
+                (sum,p) =>
+                    sum + Number(p.stock),
+                0
+            );
+
+    });
 
 
-    let pendingReceipts =
-        receipts.filter(
-            r => r.status !== "Done"
-        ).length;
+    let warehouseEntries =
+        Object.entries(warehouseStock);
 
 
-    let pendingDeliveries =
-        deliveries.filter(
-            d => d.status !== "Done"
-        ).length;
+    let maxWarehouseStock =
+        Math.max(
+            ...warehouseEntries.map(
+                x => x[1]
+            ),
+            1
+        );
 
 
-    let pendingTransfers =
-        transfers.filter(
-            t => t.status !== "Done"
-        ).length;
+    /* =========================
+       RECENT ACTIVITY
+    ========================= */
 
+    let recentHistory =
+        history.slice(0,6);
+
+
+    let activityHTML = "";
+
+
+    if(recentHistory.length === 0){
+
+        activityHTML = `
+
+            <div class="dashboard-empty">
+
+                <div class="empty-icon">
+                    ✨
+                </div>
+
+                <h4>
+                    No recent activity
+                </h4>
+
+                <p>
+                    Your inventory activity will
+                    appear here.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+    else{
+
+        activityHTML =
+            recentHistory.map(item => {
+
+                let icon = "📦";
+                let color = "pink";
+
+                if(
+                    item.type
+                    &&
+                    item.type
+                    .toLowerCase()
+                    .includes("receipt")
+                ){
+                    icon = "📥";
+                    color = "green";
+                }
+
+                else if(
+                    item.type
+                    &&
+                    item.type
+                    .toLowerCase()
+                    .includes("delivery")
+                ){
+                    icon = "📤";
+                    color = "red";
+                }
+
+                else if(
+                    item.type
+                    &&
+                    item.type
+                    .toLowerCase()
+                    .includes("transfer")
+                ){
+                    icon = "🔄";
+                    color = "purple";
+                }
+
+                else if(
+                    item.type
+                    &&
+                    item.type
+                    .toLowerCase()
+                    .includes("adjust")
+                ){
+                    icon = "⚙️";
+                    color = "orange";
+                }
+
+
+                return `
+
+                    <div
+                        class="activity-item">
+
+                        <div
+                            class="
+                            activity-icon
+                            ${color}
+                            ">
+
+                            ${icon}
+
+                        </div>
+
+
+                        <div
+                            class="activity-info">
+
+                            <strong>
+                                ${item.type || "Inventory Update"}
+                            </strong>
+
+                            <span>
+                                ${item.details || ""}
+                            </span>
+
+                        </div>
+
+
+                        <time>
+                            ${item.date || ""}
+                        </time>
+
+                    </div>
+
+                `;
+
+            }).join("");
+
+    }
+
+
+    /* =========================
+       LOW STOCK HTML
+    ========================= */
+
+    let lowStockHTML = "";
+
+
+    if(lowProducts.length === 0){
+
+        lowStockHTML = `
+
+            <div class="dashboard-success">
+
+                <span>
+                    ✓
+                </span>
+
+                <div>
+
+                    <strong>
+                        Inventory is healthy
+                    </strong>
+
+                    <p>
+                        No products are currently
+                        below their reorder level.
+                    </p>
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+    else{
+
+        lowStockHTML =
+            lowProducts
+            .slice(0,5)
+            .map(p => {
+
+                let percentage =
+                    p.reorder > 0
+                    ?
+                    Math.min(
+                        (p.stock / p.reorder) * 100,
+                        100
+                    )
+                    :
+                    0;
+
+
+                return `
+
+                    <div
+                        class="low-stock-item">
+
+                        <div
+                            class="low-product">
+
+                            <div
+                                class="low-product-icon">
+
+                                📦
+
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    ${p.name}
+                                </strong>
+
+                                <span>
+                                    ${p.location}
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="low-stock-values">
+
+                            <strong>
+                                ${p.stock} ${p.unit}
+                            </strong>
+
+                            <span>
+                                Reorder: ${p.reorder}
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="low-progress">
+
+                            <div
+                                style="
+                                width:${percentage}%
+                                ">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            }).join("");
+
+    }
+
+
+    /* =========================
+       CATEGORY BARS
+    ========================= */
+
+    let categoryHTML =
+        categoryEntries
+        .slice(0,5)
+        .map(([category,stock],index) => {
+
+            let width =
+                (stock / maxCategoryStock) * 100;
+
+
+            let colors = [
+                "pink",
+                "purple",
+                "blue",
+                "orange",
+                "green"
+            ];
+
+            let color =
+                colors[index % colors.length];
+
+
+            return `
+
+                <div class="category-row">
+
+                    <div
+                        class="category-label">
+
+                        <span>
+                            ${category}
+                        </span>
+
+                        <strong>
+                            ${stock}
+                        </strong>
+
+                    </div>
+
+
+                    <div
+                        class="category-track">
+
+                        <div
+                            class="
+                            category-fill
+                            ${color}
+                            "
+                            style="
+                            width:${width}%
+                            ">
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
+
+
+    /* =========================
+       WAREHOUSE BARS
+    ========================= */
+
+    let warehouseHTML =
+        warehouseEntries
+        .filter(([name,stock]) => stock > 0)
+        .slice(0,5)
+        .map(([name,stock],index) => {
+
+            let width =
+                (stock / maxWarehouseStock) * 100;
+
+
+            return `
+
+                <div class="warehouse-mini-row">
+
+                    <div
+                        class="warehouse-mini-name">
+
+                        <span>
+                            🏭
+                        </span>
+
+                        <strong>
+                            ${name}
+                        </strong>
+
+                    </div>
+
+
+                    <div
+                        class="warehouse-mini-bar">
+
+                        <div
+                            style="
+                            width:${width}%
+                            ">
+
+                        </div>
+
+                    </div>
+
+
+                    <strong>
+                        ${stock}
+                    </strong>
+
+                </div>
+
+            `;
+
+        }).join("");
+
+
+    /* =========================
+       DASHBOARD HTML
+    ========================= */
 
     content.innerHTML = `
 
-        <div class="grid kpi-grid">
+        <div class="premium-dashboard">
 
-            <div class="card">
 
-                <div class="kpi-label">
-                    Total Products in Stock
+            <!-- HERO HEADER -->
+
+            <div class="dashboard-welcome">
+
+                <div>
+
+                    <span class="dashboard-eyebrow">
+                        INVENTORY CONTROL CENTER
+                    </span>
+
+                    <h1>
+                        Inventory Overview
+                    </h1>
+
+                    <p>
+                        Monitor your stock, warehouse
+                        operations and inventory activity
+                        from one place.
+                    </p>
+
                 </div>
 
-                <div class="kpi-number">
-                    ${totalStock}
-                </div>
 
-            </div>
+                <div class="dashboard-date">
 
+                    <span>
+                        TODAY
+                    </span>
 
-            <div class="card">
+                    <strong>
+                        ${new Date()
+                            .toLocaleDateString(
+                                "en-IN",
+                                {
+                                    day:"2-digit",
+                                    month:"short",
+                                    year:"numeric"
+                                }
+                            )}
+                    </strong>
 
-                <div class="kpi-label">
-                    Low / Out of Stock
-                </div>
-
-                <div class="kpi-number">
-                    ${lowStock}
-                </div>
-
-            </div>
-
-
-            <div class="card">
-
-                <div class="kpi-label">
-                    Pending Receipts
-                </div>
-
-                <div class="kpi-number">
-                    ${pendingReceipts}
-                </div>
-
-            </div>
-
-
-            <div class="card">
-
-                <div class="kpi-label">
-                    Pending Deliveries
-                </div>
-
-                <div class="kpi-number">
-                    ${pendingDeliveries}
                 </div>
 
             </div>
 
 
-            <div class="card">
+            <!-- KPI CARDS -->
 
-                <div class="kpi-label">
-                    Transfers Scheduled
+            <div class="dashboard-kpis">
+
+
+                <div class="
+                    dashboard-kpi
+                    kpi-pink
+                ">
+
+                    <div class="kpi-top">
+
+                        <div class="kpi-icon">
+                            📦
+                        </div>
+
+                        <span class="kpi-arrow">
+                            ↗
+                        </span>
+
+                    </div>
+
+
+                    <span class="kpi-title">
+                        Total Products in Stock
+                    </span>
+
+                    <strong class="kpi-value">
+                        ${totalStock}
+                    </strong>
+
+                    <span class="kpi-footer">
+                        Across all locations
+                    </span>
+
                 </div>
 
-                <div class="kpi-number">
-                    ${pendingTransfers}
+
+                <div class="
+                    dashboard-kpi
+                    kpi-purple
+                ">
+
+                    <div class="kpi-top">
+
+                        <div class="kpi-icon">
+                            ⚠️
+                        </div>
+
+                        <span class="kpi-arrow">
+                            !
+                        </span>
+
+                    </div>
+
+
+                    <span class="kpi-title">
+                        Low / Out of Stock
+                    </span>
+
+                    <strong class="kpi-value">
+                        ${lowStock}
+                    </strong>
+
+                    <span class="kpi-footer">
+                        Needs attention
+                    </span>
+
+                </div>
+
+
+                <div class="
+                    dashboard-kpi
+                    kpi-blue
+                ">
+
+                    <div class="kpi-top">
+
+                        <div class="kpi-icon">
+                            📥
+                        </div>
+
+                        <span class="kpi-arrow">
+                            ↗
+                        </span>
+
+                    </div>
+
+
+                    <span class="kpi-title">
+                        Pending Receipts
+                    </span>
+
+                    <strong class="kpi-value">
+                        ${pendingReceipts}
+                    </strong>
+
+                    <span class="kpi-footer">
+                        Incoming operations
+                    </span>
+
+                </div>
+
+
+                <div class="
+                    dashboard-kpi
+                    kpi-green
+                ">
+
+                    <div class="kpi-top">
+
+                        <div class="kpi-icon">
+                            🔄
+                        </div>
+
+                        <span class="kpi-arrow">
+                            ↗
+                        </span>
+
+                    </div>
+
+
+                    <span class="kpi-title">
+                        Transfers Scheduled
+                    </span>
+
+                    <strong class="kpi-value">
+                        ${pendingTransfers}
+                    </strong>
+
+                    <span class="kpi-footer">
+                        Internal movements
+                    </span>
+
                 </div>
 
             </div>
 
-        </div>
+
+            <!-- QUICK ACTIONS -->
+
+            <div class="dashboard-section-title">
+
+                <div>
+
+                    <span>
+                        WORKFLOW
+                    </span>
+
+                    <h2>
+                        Quick Actions
+                    </h2>
+
+                </div>
+
+            </div>
 
 
-        <div class="section-header">
-
-            <h2>
-                Quick Actions
-            </h2>
-
-        </div>
+            <div class="quick-action-grid">
 
 
-        <div class="grid"
-             style="grid-template-columns:repeat(4,1fr)">
+                <button
+                    class="quick-action pink-action"
+                    onclick="openProductModal()">
 
-            <button
-                class="card btn"
-                onclick="openProductModal()">
+                    <div class="quick-icon">
+                        ＋
+                    </div>
 
-                ➕ Add Product
+                    <div>
 
-            </button>
+                        <strong>
+                            Add Product
+                        </strong>
 
+                        <span>
+                            Create new inventory item
+                        </span>
 
-            <button
-                class="card btn"
-                onclick="openReceiptModal()">
+                    </div>
 
-                📥 New Receipt
+                    <b>
+                        →
+                    </b>
 
-            </button>
-
-
-            <button
-                class="card btn"
-                onclick="openDeliveryModal()">
-
-                📤 New Delivery
-
-            </button>
+                </button>
 
 
-            <button
-                class="card btn"
-                onclick="openTransferModal()">
+                <button
+                    class="quick-action purple-action"
+                    onclick="openReceiptModal()">
 
-                🔄 New Transfer
+                    <div class="quick-icon">
+                        📥
+                    </div>
 
-            </button>
+                    <div>
 
-        </div>
+                        <strong>
+                            New Receipt
+                        </strong>
+
+                        <span>
+                            Receive incoming stock
+                        </span>
+
+                    </div>
+
+                    <b>
+                        →
+                    </b>
+
+                </button>
 
 
-        <div class="section-header">
+                <button
+                    class="quick-action blue-action"
+                    onclick="openDeliveryModal()">
 
-            <h2>
-                Low Stock Alerts
-            </h2>
+                    <div class="quick-icon">
+                        📤
+                    </div>
 
-        </div>
+                    <div>
+
+                        <strong>
+                            New Delivery
+                        </strong>
+
+                        <span>
+                            Create outgoing order
+                        </span>
+
+                    </div>
+
+                    <b>
+                        →
+                    </b>
+
+                </button>
 
 
-        <div class="card">
+                <button
+                    class="quick-action green-action"
+                    onclick="openTransferModal()">
 
-            ${lowStockTable()}
+                    <div class="quick-icon">
+                        🔄
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            New Transfer
+                        </strong>
+
+                        <span>
+                            Move stock between locations
+                        </span>
+
+                    </div>
+
+                    <b>
+                        →
+                    </b>
+
+                </button>
+
+
+            </div>
+
+
+            <!-- ANALYTICS -->
+
+            <div class="dashboard-main-grid">
+
+
+                <!-- CATEGORY ANALYTICS -->
+
+                <div class="
+                    dashboard-panel
+                    analytics-panel
+                ">
+
+                    <div
+                        class="panel-header">
+
+                        <div>
+
+                            <span>
+                                OVERVIEW
+                            </span>
+
+                            <h3>
+                                Stock by Category
+                            </h3>
+
+                        </div>
+
+                        <div class="panel-icon">
+                            📊
+                        </div>
+
+                    </div>
+
+
+                    <div class="category-chart">
+
+                        ${
+                            categoryHTML
+                            ||
+                            `
+                            <div class="dashboard-empty">
+                                No category data
+                            </div>
+                            `
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <!-- WAREHOUSE ANALYTICS -->
+
+                <div class="
+                    dashboard-panel
+                    warehouse-panel
+                ">
+
+                    <div
+                        class="panel-header">
+
+                        <div>
+
+                            <span>
+                                LOCATIONS
+                            </span>
+
+                            <h3>
+                                Warehouse Stock
+                            </h3>
+
+                        </div>
+
+                        <button
+                            class="view-link"
+                            onclick="
+                                showPage('warehouse')
+                            ">
+
+                            View All →
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="warehouse-chart">
+
+                        ${
+                            warehouseHTML
+                            ||
+                            `
+                            <div class="dashboard-empty">
+                                No warehouse stock available
+                            </div>
+                            `
+                        }
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- LOWER GRID -->
+
+            <div class="dashboard-lower-grid">
+
+
+                <!-- LOW STOCK -->
+
+                <div class="
+                    dashboard-panel
+                    low-stock-panel
+                ">
+
+                    <div
+                        class="panel-header">
+
+                        <div>
+
+                            <span>
+                                ATTENTION
+                            </span>
+
+                            <h3>
+                                Low Stock Alerts
+                            </h3>
+
+                        </div>
+
+
+                        <div
+                            class="alert-count">
+
+                            ${lowStock}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="low-stock-list">
+
+                        ${lowStockHTML}
+
+                    </div>
+
+                </div>
+
+
+                <!-- RECENT ACTIVITY -->
+
+                <div class="
+                    dashboard-panel
+                    activity-panel
+                ">
+
+                    <div
+                        class="panel-header">
+
+                        <div>
+
+                            <span>
+                                ACTIVITY
+                            </span>
+
+                            <h3>
+                                Recent Inventory Activity
+                            </h3>
+
+                        </div>
+
+
+                        <button
+                            class="view-link"
+                            onclick="
+                                showPage('history')
+                            ">
+
+                            View History →
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="activity-list">
+
+                        ${activityHTML}
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
 
         </div>
 
     `;
 }
+
+// function dashboard(){
+
+//     let content =
+//         document.getElementById("content");
+
+
+//     let totalStock =
+//         products.reduce(
+//             (sum,p) => sum + Number(p.stock),
+//             0
+//         );
+
+
+//     let lowStock =
+//         products.filter(
+//             p => p.stock <= p.reorder
+//         ).length;
+
+
+//     let pendingReceipts =
+//         receipts.filter(
+//             r => r.status !== "Done"
+//         ).length;
+
+
+//     let pendingDeliveries =
+//         deliveries.filter(
+//             d => d.status !== "Done"
+//         ).length;
+
+
+//     let pendingTransfers =
+//         transfers.filter(
+//             t => t.status !== "Done"
+//         ).length;
+
+
+//     content.innerHTML = `
+
+//         <div class="grid kpi-grid">
+
+//             <div class="card">
+
+//                 <div class="kpi-label">
+//                     Total Products in Stock
+//                 </div>
+
+//                 <div class="kpi-number">
+//                     ${totalStock}
+//                 </div>
+
+//             </div>
+
+
+//             <div class="card">
+
+//                 <div class="kpi-label">
+//                     Low / Out of Stock
+//                 </div>
+
+//                 <div class="kpi-number">
+//                     ${lowStock}
+//                 </div>
+
+//             </div>
+
+
+//             <div class="card">
+
+//                 <div class="kpi-label">
+//                     Pending Receipts
+//                 </div>
+
+//                 <div class="kpi-number">
+//                     ${pendingReceipts}
+//                 </div>
+
+//             </div>
+
+
+//             <div class="card">
+
+//                 <div class="kpi-label">
+//                     Pending Deliveries
+//                 </div>
+
+//                 <div class="kpi-number">
+//                     ${pendingDeliveries}
+//                 </div>
+
+//             </div>
+
+
+//             <div class="card">
+
+//                 <div class="kpi-label">
+//                     Transfers Scheduled
+//                 </div>
+
+//                 <div class="kpi-number">
+//                     ${pendingTransfers}
+//                 </div>
+
+//             </div>
+
+//         </div>
+
+
+//         <div class="section-header">
+
+//             <h2>
+//                 Quick Actions
+//             </h2>
+
+//         </div>
+
+
+//         <div class="grid"
+//              style="grid-template-columns:repeat(4,1fr)">
+
+//             <button
+//                 class="card btn"
+//                 onclick="openProductModal()">
+
+//                 ➕ Add Product
+
+//             </button>
+
+
+//             <button
+//                 class="card btn"
+//                 onclick="openReceiptModal()">
+
+//                 📥 New Receipt
+
+//             </button>
+
+
+//             <button
+//                 class="card btn"
+//                 onclick="openDeliveryModal()">
+
+//                 📤 New Delivery
+
+//             </button>
+
+
+//             <button
+//                 class="card btn"
+//                 onclick="openTransferModal()">
+
+//                 🔄 New Transfer
+
+//             </button>
+
+//         </div>
+
+
+//         <div class="section-header">
+
+//             <h2>
+//                 Low Stock Alerts
+//             </h2>
+
+//         </div>
+
+
+//         <div class="card">
+
+//             ${lowStockTable()}
+
+//         </div>
+
+//     `;
+// }
 
 
 /* =========================================
