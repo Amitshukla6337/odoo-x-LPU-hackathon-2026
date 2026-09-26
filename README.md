@@ -12,7 +12,6 @@
 | **Amit Shukla** | Team Leader & Project Architecture |
 | **Prakash Kumar** | Backend Integration, Database & Operations |
 | **Anjali** | Frontend Design & User Interface |
-| **Jasim** | Module Implementation & Data Workflows |
 
 ---
 
