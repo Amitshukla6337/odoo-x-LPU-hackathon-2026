@@ -2388,125 +2388,1435 @@ function addWarehouse(){
    PROFILE
 ========================================= */
 
+// function profilePage(){
+
+//     document.getElementById(
+//         "content"
+//     ).innerHTML = `
+
+//         <div class="card">
+
+//             <h2>
+//                 My Profile
+//             </h2>
+
+//             <br>
+
+//             <p>
+//                 <b>Name:</b>
+//                 Inventory Manager
+//             </p>
+
+//             <br>
+
+//             <p>
+//                 <b>Role:</b>
+//                 Inventory Manager
+//             </p>
+
+//             <br>
+
+//             <p>
+//                 <b>System:</b>
+//                 StockSense
+//             </p>
+
+//             <br>
+
+//             <button
+//                 class="btn btn-danger"
+//                 onclick="logout()">
+
+//                 Logout
+
+//             </button>
+
+//         </div>
+
+//     `;
+
+// }
+
+
+// /* =========================================
+//    LOGOUT
+// ========================================= */
+
+// function logout(){
+
+//     alert(
+//         "Logout clicked."
+//     );
+
+// }
+
+
+// /* =========================================
+//    CLOSE MODAL
+// ========================================= */
+
+// function closeModal(){
+
+//     document.getElementById(
+//         "modal"
+//     ).style.display="none";
+
+// }
+
+
+// /* =========================================
+//    GLOBAL SEARCH
+// ========================================= */
+
+// function globalSearch(){
+
+//     let value =
+//         document.getElementById(
+//             "search"
+//         ).value.toLowerCase();
+
+
+//     if(!value){
+
+//         return;
+
+//     }
+
+
+//     let result =
+//         products.filter(
+//             p =>
+//             p.name
+//             .toLowerCase()
+//             .includes(value)
+//             ||
+//             p.sku
+//             .toLowerCase()
+//             .includes(value)
+//         );
+
+
+//     if(result.length){
+
+//         showPage("products");
+
+//     }
+
+
+
+// }
+
+
+/* =========================================
+   FANCY INVENTORY MANAGER PROFILE
+========================================= */
+
 function profilePage(){
 
-    document.getElementById(
-        "content"
-    ).innerHTML = `
+    let content =
+        document.getElementById("content");
 
-        <div class="card">
 
-            <h2>
-                My Profile
-            </h2>
+    /*
+       Inventory Manager profile data
+    */
 
-            <br>
+    let manager = {
 
-            <p>
-                <b>Name:</b>
-                Inventory Manager
-            </p>
+        name: "Anjali Kumari",
 
-            <br>
+        role: "Inventory Manager",
 
-            <p>
-                <b>Role:</b>
-                Inventory Manager
-            </p>
+        email: "anjali@stocksense.com",
 
-            <br>
+        phone: "+91 98765 43210",
 
-            <p>
-                <b>System:</b>
-                StockSense
-            </p>
+        location: "Main Warehouse",
 
-            <br>
+        department: "Inventory Operations",
 
-            <button
-                class="btn btn-danger"
-                onclick="logout()">
+        bio:
+        "Inventory Manager responsible for monitoring stock, managing warehouse operations, validating receipts and deliveries, and maintaining accurate inventory records."
 
-                Logout
+    };
 
-            </button>
+
+    /*
+       Calculate profile completion
+    */
+
+    let completed = 0;
+
+    if(manager.name) completed++;
+
+    if(manager.role) completed++;
+
+    if(manager.email) completed++;
+
+    if(manager.phone) completed++;
+
+    if(manager.location) completed++;
+
+    if(manager.department) completed++;
+
+    if(manager.bio) completed++;
+
+
+    let totalFields = 7;
+
+    let percentage =
+        Math.round(
+            (completed / totalFields) * 100
+        );
+
+
+    /*
+       Inventory statistics
+    */
+
+    let totalProducts =
+        products.length;
+
+
+    let totalStock =
+        products.reduce(
+            (sum,p) =>
+            sum + Number(p.stock),
+            0
+        );
+
+
+    let lowStock =
+        products.filter(
+            p => p.stock <= p.reorder
+        ).length;
+
+
+    let warehousesCount =
+        warehouses.length;
+
+
+    content.innerHTML = `
+
+        <div class="profile-page">
+
+
+            <!-- =================================
+                 PROFILE HERO
+            ================================= -->
+
+            <div class="profile-hero">
+
+
+                <!-- Background decoration -->
+
+                <div class="hero-chart">
+
+                    <div class="chart-line line-one"></div>
+
+                    <div class="chart-line line-two"></div>
+
+                    <div class="chart-line line-three"></div>
+
+
+                    <div class="chart-bar bar-one"></div>
+
+                    <div class="chart-bar bar-two"></div>
+
+                    <div class="chart-bar bar-three"></div>
+
+                    <div class="chart-bar bar-four"></div>
+
+                    <div class="chart-bar bar-five"></div>
+
+                    <div class="chart-bar bar-six"></div>
+
+                    <div class="chart-bar bar-seven"></div>
+
+
+                    <div class="glow-circle glow-one"></div>
+
+                    <div class="glow-circle glow-two"></div>
+
+                </div>
+
+
+                <!-- Profile information -->
+
+                <div class="profile-hero-content">
+
+
+                    <div class="profile-avatar-large">
+
+                        AK
+
+                    </div>
+
+
+                    <div class="profile-main-info">
+
+                        <div class="profile-name-row">
+
+                            <h1>
+                                ${manager.name}
+                            </h1>
+
+                            <span class="verified-badge">
+                                ✓ Verified
+                            </span>
+
+                        </div>
+
+
+                        <p class="profile-role">
+
+                            📦 ${manager.role}
+
+                        </p>
+
+
+                        <p class="profile-location">
+
+                            📍 ${manager.location}
+
+                        </p>
+
+
+                        <div class="profile-tags">
+
+                            <span>
+                                Inventory Operations
+                            </span>
+
+                            <span>
+                                Warehouse Management
+                            </span>
+
+                            <span>
+                                Stock Control
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="profile-edit-btn"
+                        onclick="openEditProfile()">
+
+                        ✎ Edit Profile
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =================================
+                 PROFILE BODY
+            ================================= -->
+
+            <div class="profile-layout">
+
+
+                <!-- LEFT SIDE -->
+
+                <div class="profile-left">
+
+
+                    <!-- PERSONAL INFORMATION -->
+
+                    <div class="profile-card">
+
+
+                        <div class="profile-card-header">
+
+                            <div>
+
+                                <h2>
+                                    Personal Information
+                                </h2>
+
+                                <p>
+                                    Your account and contact details
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                class="small-edit"
+                                onclick="openEditProfile()">
+
+                                ✎ Edit
+
+                            </button>
+
+                        </div>
+
+
+                        <div class="personal-grid">
+
+
+                            <div class="info-item">
+
+                                <span class="info-icon">
+                                    👤
+                                </span>
+
+                                <div>
+
+                                    <small>
+                                        Full Name
+                                    </small>
+
+                                    <strong>
+                                        ${manager.name}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="info-item">
+
+                                <span class="info-icon">
+                                    ✉️
+                                </span>
+
+                                <div>
+
+                                    <small>
+                                        Email
+                                    </small>
+
+                                    <strong>
+                                        ${manager.email}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="info-item">
+
+                                <span class="info-icon">
+                                    📞
+                                </span>
+
+                                <div>
+
+                                    <small>
+                                        Phone
+                                    </small>
+
+                                    <strong>
+                                        ${manager.phone}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="info-item">
+
+                                <span class="info-icon">
+                                    🏭
+                                </span>
+
+                                <div>
+
+                                    <small>
+                                        Department
+                                    </small>
+
+                                    <strong>
+                                        ${manager.department}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="info-item">
+
+                                <span class="info-icon">
+                                    📍
+                                </span>
+
+                                <div>
+
+                                    <small>
+                                        Location
+                                    </small>
+
+                                    <strong>
+                                        ${manager.location}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="info-item">
+
+                                <span class="info-icon">
+                                    🛡️
+                                </span>
+
+                                <div>
+
+                                    <small>
+                                        Access Level
+                                    </small>
+
+                                    <strong>
+                                        Manager
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- ABOUT -->
+
+                    <div class="profile-card">
+
+
+                        <div class="profile-card-header">
+
+                            <div>
+
+                                <h2>
+                                    About Me
+                                </h2>
+
+                                <p>
+                                    Your professional profile
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                class="small-edit"
+                                onclick="openEditProfile()">
+
+                                ✎ Edit
+
+                            </button>
+
+                        </div>
+
+
+                        <p class="profile-bio">
+
+                            ${manager.bio}
+
+                        </p>
+
+                    </div>
+
+
+
+                    <!-- INVENTORY ACTIVITY -->
+
+                    <div class="profile-card">
+
+
+                        <div class="profile-card-header">
+
+                            <div>
+
+                                <h2>
+                                    Inventory Overview
+                                </h2>
+
+                                <p>
+                                    Your current operational summary
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="profile-stats">
+
+
+                            <div class="profile-stat purple">
+
+                                <div class="stat-symbol">
+                                    📦
+                                </div>
+
+                                <div>
+
+                                    <span>
+                                        Products
+                                    </span>
+
+                                    <strong>
+                                        ${totalProducts}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="profile-stat blue">
+
+                                <div class="stat-symbol">
+                                    📊
+                                </div>
+
+                                <div>
+
+                                    <span>
+                                        Total Stock
+                                    </span>
+
+                                    <strong>
+                                        ${totalStock}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="profile-stat orange">
+
+                                <div class="stat-symbol">
+                                    ⚠️
+                                </div>
+
+                                <div>
+
+                                    <span>
+                                        Low Stock
+                                    </span>
+
+                                    <strong>
+                                        ${lowStock}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="profile-stat green">
+
+                                <div class="stat-symbol">
+                                    🏭
+                                </div>
+
+                                <div>
+
+                                    <span>
+                                        Warehouses
+                                    </span>
+
+                                    <strong>
+                                        ${warehousesCount}
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================
+                     RIGHT SIDE
+                ================================= -->
+
+                <div class="profile-right">
+
+
+                    <!-- PROFILE COMPLETION -->
+
+                    <div class="completion-card">
+
+
+                        <div class="completion-header">
+
+                            <div>
+
+                                <h2>
+                                    Complete Your Profile
+                                </h2>
+
+                                <p>
+                                    Keep your profile updated
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CIRCLE -->
+
+                        <div class="completion-circle"
+                             style="
+                             --progress:${percentage * 3.6}deg;
+                             ">
+
+                            <div class="circle-inner">
+
+                                <strong>
+                                    ${percentage}%
+                                </strong>
+
+                                <span>
+                                    Complete
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- CHECKLIST -->
+
+                        <div class="completion-list">
+
+
+                            <div class="completion-item done">
+
+                                <span>✓</span>
+
+                                <div>
+
+                                    <b>
+                                        Setup account
+                                    </b>
+
+                                    <small>
+                                        Account created
+                                    </small>
+
+                                </div>
+
+                                <strong>
+                                    15%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="completion-item done">
+
+                                <span>✓</span>
+
+                                <div>
+
+                                    <b>
+                                        Personal information
+                                    </b>
+
+                                    <small>
+                                        Contact details added
+                                    </small>
+
+                                </div>
+
+                                <strong>
+                                    15%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="completion-item done">
+
+                                <span>✓</span>
+
+                                <div>
+
+                                    <b>
+                                        Warehouse assigned
+                                    </b>
+
+                                    <small>
+                                        ${manager.location}
+                                    </small>
+
+                                </div>
+
+                                <strong>
+                                    15%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="completion-item done">
+
+                                <span>✓</span>
+
+                                <div>
+
+                                    <b>
+                                        Role information
+                                    </b>
+
+                                    <small>
+                                        ${manager.role}
+                                    </small>
+
+                                </div>
+
+                                <strong>
+                                    15%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="completion-item">
+
+                                <span>○</span>
+
+                                <div>
+
+                                    <b>
+                                        Profile photo
+                                    </b>
+
+                                    <small>
+                                        Add a professional photo
+                                    </small>
+
+                                </div>
+
+                                <strong>
+                                    10%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="completion-item">
+
+                                <span>○</span>
+
+                                <div>
+
+                                    <b>
+                                        Notification settings
+                                    </b>
+
+                                    <small>
+                                        Configure alerts
+                                    </small>
+
+                                </div>
+
+                                <strong>
+                                    10%
+                                </strong>
+
+                            </div>
+
+
+                        </div>
+
+
+                        <button
+                            class="complete-profile-btn"
+                            onclick="openEditProfile()">
+
+                            Complete Profile →
+
+                        </button>
+
+                    </div>
+
+
+
+                    <!-- SECURITY CARD -->
+
+                    <div class="security-card">
+
+                        <div class="security-icon">
+                            🔐
+                        </div>
+
+                        <div>
+
+                            <h3>
+                                Account Security
+                            </h3>
+
+                            <p>
+                                Your account is protected
+                            </p>
+
+                            <span class="security-status">
+                                ● Secure
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- ROLE CARD -->
+
+                    <div class="role-card">
+
+                        <div class="role-icon">
+                            📦
+                        </div>
+
+                        <h3>
+                            Inventory Manager
+                        </h3>
+
+                        <p>
+                            Full access to inventory,
+                            warehouse and stock operations.
+                        </p>
+
+                        <div class="role-permissions">
+
+                            <span>✓ Products</span>
+
+                            <span>✓ Receipts</span>
+
+                            <span>✓ Deliveries</span>
+
+                            <span>✓ Transfers</span>
+
+                            <span>✓ Adjustments</span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
 
         </div>
 
     `;
-
 }
 
 
 /* =========================================
-   LOGOUT
+   EDIT PROFILE
 ========================================= */
 
-function logout(){
+// function openEditProfile(){
 
-    alert(
-        "Logout clicked."
-    );
+//     document.getElementById(
+//         "modalContent"
+//     ).innerHTML = `
 
+//         <h2>
+//             Edit Inventory Manager Profile
+//         </h2>
+
+//         <br>
+
+
+//         <form
+//             class="form"
+//             onsubmit="saveProfile(event)">
+
+
+//             <div class="form-group">
+
+//                 <label>
+//                     Full Name
+//                 </label>
+
+//                 <input
+//                     name="name"
+//                     value="Anjali Kumari"
+//                     required>
+
+//             </div>
+
+
+//             <div class="form-group">
+
+//                 <label>
+//                     Role
+//                 </label>
+
+//                 <input
+//                     name="role"
+//                     value="Inventory Manager"
+//                     readonly>
+
+//             </div>
+
+
+//             <div class="form-group">
+
+//                 <label>
+//                     Email
+//                 </label>
+
+//                 <input
+//                     type="email"
+//                     name="email"
+//                     value="anjali@stocksense.com"
+//                     required>
+
+//             </div>
+
+
+//             <div class="form-group">
+
+//                 <label>
+//                     Phone
+//                 </label>
+
+//                 <input
+//                     name="phone"
+//                     value="+91 98765 43210">
+
+//             </div>
+
+
+//             <div class="form-group">
+
+//                 <label>
+//                     Warehouse
+//                 </label>
+
+//                 <select name="location">
+
+//                     ${warehouses.map(w => `
+
+//                         <option>
+//                             ${w}
+//                         </option>
+
+//                     `).join("")}
+
+//                 </select>
+
+//             </div>
+
+
+//             <div class="form-group">
+
+//                 <label>
+//                     Department
+//                 </label>
+
+//                 <input
+//                     name="department"
+//                     value="Inventory Operations">
+
+//             </div>
+
+
+//             <div class="form-group full">
+
+//                 <label>
+//                     Bio
+//                 </label>
+
+//                 <textarea
+//                     name="bio"
+//                     rows="5">Inventory Manager responsible for monitoring stock, managing warehouse operations, validating receipts and deliveries, and maintaining accurate inventory records.</textarea>
+
+//             </div>
+
+
+//             <div class="form-group full">
+
+//                 <button
+//                     class="btn btn-primary">
+
+//                     Save Profile
+
+//                 </button>
+
+//             </div>
+
+//         </form>
+
+//     `;
+
+
+//     document.getElementById("modal")
+//         .style.display="flex";
+
+// }
+function openEditProfile() {
+
+    const profile = JSON.parse(
+        localStorage.getItem("managerProfile")
+    ) || {
+        name: "Anjali Kumari",
+        role: "Inventory Manager",
+        email: "anjali@stocksense.com",
+        phone: "+91 98765 43210",
+        warehouse: "Main Warehouse",
+        department: "Inventory Operations",
+        bio: "Inventory Manager responsible for monitoring stock, managing warehouse operations, validating receipts and deliveries, and maintaining accurate inventory records."
+    };
+
+    const modal = document.getElementById("modal");
+
+    modal.innerHTML = `
+        <div class="modal-box profile-modal">
+
+            <button
+                type="button"
+                class="profile-close-btn"
+                onclick="closeProfileModal()">
+                ×
+            </button>
+
+            <h2>Edit Inventory Manager Profile</h2>
+
+            <div class="form">
+
+                <!-- FULL NAME -->
+                <div class="form-group">
+                    <label>
+                        Full Name <span class="required-star">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="profileName"
+                        value="${profile.name || ""}"
+                        placeholder="Enter full name"
+                        required>
+                </div>
+
+
+                <!-- ROLE -->
+                <div class="form-group">
+                    <label>
+                        Role <span class="required-star">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="profileRole"
+                        value="${profile.role || ""}"
+                        placeholder="Enter role"
+                        required>
+                </div>
+
+
+                <!-- EMAIL -->
+                <div class="form-group">
+                    <label>
+                        Email <span class="required-star">*</span>
+                    </label>
+
+                    <input
+                        type="email"
+                        id="profileEmail"
+                        value="${profile.email || ""}"
+                        placeholder="example@email.com"
+                        required>
+                </div>
+
+
+                <!-- PHONE OPTIONAL -->
+                <div class="form-group">
+                    <label>
+                        Phone Number
+                        <span class="optional-text">(Optional)</span>
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="profilePhone"
+                        value="${profile.phone || ""}"
+                        placeholder="+91 98765 43210"
+                        pattern="^(\\+91[\\s-]?)?[6-9][0-9]{9}$"
+                        title="Enter a valid 10-digit Indian mobile number">
+                        
+                    <small class="field-hint">
+                        Leave blank if you don't want to provide a phone number.
+                    </small>
+                </div>
+
+
+                <!-- WAREHOUSE -->
+                <div class="form-group">
+                    <label>
+                        Warehouse <span class="required-star">*</span>
+                    </label>
+
+                    <select id="profileWarehouse" required>
+
+                        <option value="Main Warehouse"
+                            ${profile.warehouse === "Main Warehouse" ? "selected" : ""}>
+                            Main Warehouse
+                        </option>
+
+                        <option value="Warehouse 2"
+                            ${profile.warehouse === "Warehouse 2" ? "selected" : ""}>
+                            Warehouse 2
+                        </option>
+
+                        <option value="Warehouse 3"
+                            ${profile.warehouse === "Warehouse 3" ? "selected" : ""}>
+                            Warehouse 3
+                        </option>
+
+                    </select>
+                </div>
+
+
+                <!-- DEPARTMENT -->
+                <div class="form-group">
+                    <label>
+                        Department <span class="required-star">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="profileDepartment"
+                        value="${profile.department || ""}"
+                        placeholder="Enter department"
+                        required>
+                </div>
+
+
+                <!-- BIO -->
+                <div class="form-group full">
+                    <label>
+                        Bio <span class="required-star">*</span>
+                    </label>
+
+                    <textarea
+                        id="profileBio"
+                        rows="5"
+                        placeholder="Write a short description"
+                        required>${profile.bio || ""}</textarea>
+                </div>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="profile-save-btn"
+                onclick="saveProfile()">
+
+                Save Profile
+
+            </button>
+
+        </div>
+    `;
+
+    modal.style.display = "flex";
 }
+function saveProfile() {
+
+    const name = document
+        .getElementById("profileName")
+        .value
+        .trim();
+
+    const role = document
+        .getElementById("profileRole")
+        .value
+        .trim();
+
+    const email = document
+        .getElementById("profileEmail")
+        .value
+        .trim();
+
+    const phone = document
+        .getElementById("profilePhone")
+        .value
+        .trim();
+
+    const warehouse = document
+        .getElementById("profileWarehouse")
+        .value
+        .trim();
+
+    const department = document
+        .getElementById("profileDepartment")
+        .value
+        .trim();
+
+    const bio = document
+        .getElementById("profileBio")
+        .value
+        .trim();
 
 
-/* =========================================
-   CLOSE MODAL
-========================================= */
+    /* REQUIRED FIELD VALIDATION */
 
-function closeModal(){
+    if (!name) {
+        alert("Please enter Full Name.");
+        return;
+    }
 
-    document.getElementById(
-        "modal"
-    ).style.display="none";
+    if (!role) {
+        alert("Please enter Role.");
+        return;
+    }
 
-}
+    if (!email) {
+        alert("Please enter Email.");
+        return;
+    }
+
+    if (!warehouse) {
+        alert("Please select Warehouse.");
+        return;
+    }
+
+    if (!department) {
+        alert("Please enter Department.");
+        return;
+    }
+
+    if (!bio) {
+        alert("Please enter Bio.");
+        return;
+    }
 
 
-/* =========================================
-   GLOBAL SEARCH
-========================================= */
+    /* EMAIL VALIDATION */
 
-function globalSearch(){
+    const emailPattern =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    let value =
-        document.getElementById(
-            "search"
-        ).value.toLowerCase();
+    if (!emailPattern.test(email)) {
 
-
-    if(!value){
+        alert("Please enter a valid email address.");
 
         return;
-
     }
 
 
-    let result =
-        products.filter(
-            p =>
-            p.name
-            .toLowerCase()
-            .includes(value)
-            ||
-            p.sku
-            .toLowerCase()
-            .includes(value)
-        );
+    /* PHONE VALIDATION ONLY IF USER ENTERED PHONE */
 
+    if (phone) {
 
-    if(result.length){
+        const phonePattern =
+            /^(\+91[\s-]?)?[6-9][0-9]{9}$/;
 
-        showPage("products");
+        if (!phonePattern.test(phone)) {
 
+            alert(
+                "Please enter a valid 10-digit Indian phone number."
+            );
+
+            return;
+        }
     }
 
+
+    /* SAVE PROFILE */
+
+    const profile = {
+
+        name: name,
+
+        role: role,
+
+        email: email,
+
+        phone: phone,
+
+        warehouse: warehouse,
+
+        department: department,
+
+        bio: bio
+    };
+
+
+    localStorage.setItem(
+        "managerProfile",
+        JSON.stringify(profile)
+    );
+
+
+    /* CLOSE MODAL */
+
+    closeProfileModal();
+
+
+
+
+    /* REFRESH PROFILE PAGE */
+
+    renderCurrentPage();
+
+
+    /* SUCCESS MESSAGE */
+
+    alert("Profile updated successfully!");
 }
 
+// function saveProfile(event){
 
+//     event.preventDefault();
+
+
+//     alert(
+//         "Profile updated successfully!"
+//     );
+
+
+//     closeModal();
+
+//     profilePage();
+
+// }
 /* =========================================
    START APPLICATION
 ========================================= */
 
+function closeProfileModal() {
+
+    const modal = document.getElementById("modal");
+
+    if (modal) {
+
+        modal.style.display = "none";
+
+        modal.innerHTML = "";
+    }
+}
 showPage("dashboard");
