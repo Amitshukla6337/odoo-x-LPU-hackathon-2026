@@ -64,6 +64,17 @@ let adjustments = [];
 
 let history = [];
 
+// ─── Receipt reference counter ───────────────────────────────
+let receiptCounter  = Number(localStorage.getItem("ss_rc")  || 0);
+let deliveryCounter = Number(localStorage.getItem("ss_dc")  || 0);
+let transferCounter = Number(localStorage.getItem("ss_tc")  || 0);
+
+function nextRef(prefix, counterVar){
+    if(prefix === "WH/IN")   { receiptCounter++;  localStorage.setItem("ss_rc",  receiptCounter);  return `WH/IN/${String(receiptCounter).padStart(5,"0")}`; }
+    if(prefix === "WH/OUT")  { deliveryCounter++; localStorage.setItem("ss_dc",  deliveryCounter); return `WH/OUT/${String(deliveryCounter).padStart(5,"0")}`; }
+    if(prefix === "WH/INT")  { transferCounter++; localStorage.setItem("ss_tc",  transferCounter); return `WH/INT/${String(transferCounter).padStart(5,"0")}`; }
+}
+
 let warehouses = [
     "Main Warehouse",
     "Production Rack",
@@ -163,6 +174,105 @@ loadData();
 function generateID(){
 
     return Date.now();
+}
+
+
+/* ─── Toast Notification System ─────────────────────────────────
+   Replaces all alert() / confirm() dialogs in the Operations
+   module with a styled, auto-dismissing toast bar.
+──────────────────────────────────────────────────────────────── */
+
+function showToast(message, type = "error"){
+
+    // Remove any existing toast
+    let old = document.getElementById("ops-toast");
+    if(old) old.remove();
+
+    let colors = {
+        error:   { bg: "#fef3f2", border: "#fda29b", text: "#b42318", icon: "⚠️" },
+        success: { bg: "#f0fdf4", border: "#86efac", text: "#166534", icon: "✅" },
+        info:    { bg: "#eff6ff", border: "#93c5fd", text: "#1e40af", icon: "ℹ️" },
+        warning: { bg: "#fffbeb", border: "#fcd34d", text: "#92400e", icon: "⚡" }
+    };
+
+    let c = colors[type] || colors.error;
+
+    let toast = document.createElement("div");
+    toast.id = "ops-toast";
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        z-index: 9999;
+        background: ${c.bg};
+        border: 1.5px solid ${c.border};
+        color: ${c.text};
+        padding: 14px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 380px;
+        animation: slideInToast 0.3s ease;
+    `;
+
+    // Inject keyframe once
+    if(!document.getElementById("toast-style")){
+        let s = document.createElement("style");
+        s.id = "toast-style";
+        s.textContent = `
+            @keyframes slideInToast {
+                from { opacity:0; transform: translateX(60px); }
+                to   { opacity:1; transform: translateX(0); }
+            }
+        `;
+        document.head.appendChild(s);
+    }
+
+    toast.innerHTML = `<span style="font-size:18px">${c.icon}</span><span>${message}</span>`;
+    document.body.appendChild(toast);
+
+    setTimeout(() => { if(toast.parentNode) toast.remove(); }, 3500);
+}
+
+
+function confirmAction(message, callback){
+
+    // Remove any existing confirm dialog
+    let old = document.getElementById("ops-confirm");
+    if(old) old.remove();
+
+    let overlay = document.createElement("div");
+    overlay.id = "ops-confirm";
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+
+    overlay.innerHTML = `
+        <div style="background:white; border-radius:14px; padding:28px 32px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+            <div style="font-size:22px; margin-bottom:12px;">🗑️</div>
+            <p style="font-weight:600; font-size:15px; color:#111827; margin-bottom:8px;">Are you sure?</p>
+            <p style="color:#667085; font-size:14px; margin-bottom:24px;">${message}</p>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button id="cfm-cancel" style="padding:9px 18px; border:1px solid #d0d5dd; border-radius:7px; background:white; cursor:pointer; font-weight:600;">Cancel</button>
+                <button id="cfm-ok" style="padding:9px 18px; border:none; border-radius:7px; background:#d92d20; color:white; cursor:pointer; font-weight:600;">Confirm</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById("cfm-cancel").onclick = () => overlay.remove();
+    document.getElementById("cfm-ok").onclick = () => { overlay.remove(); callback(); };
 }
 
 
@@ -988,261 +1098,155 @@ function deleteProduct(id){
 
 
 /* =========================================
-   RECEIPTS
+   RECEIPTS  (Prakash – Operations)
+   Stock + : Supplier → Warehouse
 ========================================= */
 
 function receiptsPage(){
 
-    let content =
-        document.getElementById("content");
+    let content = document.getElementById("content");
 
+    // Status badge helper
+    function receiptBadge(status){
+        let map = {
+            "Draft":   "badge grey-badge",
+            "Waiting": "badge yellow",
+            "Ready":   "badge blue",
+            "Done":    "badge green",
+            "Cancelled": "badge red"
+        };
+        return `<span class="${map[status] || "badge blue"}">${status}</span>`;
+    }
 
     content.innerHTML = `
 
         <div class="section-header">
-
-            <h2>
-                Incoming Stock
-            </h2>
-
-            <button
-                class="btn btn-primary"
-                onclick="openReceiptModal()">
-
+            <div>
+                <h2>📥 Receipts</h2>
+                <p style="color:#667085;font-size:13px;margin-top:4px;">Incoming stock from suppliers — Stock +</p>
+            </div>
+            <button class="btn btn-primary" onclick="openReceiptModal()" id="btn-new-receipt">
                 + New Receipt
-
             </button>
-
         </div>
 
 
         <div class="card">
-
             ${
                 receipts.length
-
                 ?
-
                 `<div class="table-container">
-
                     <table>
-
                         <thead>
-
                             <tr>
-
+                                <th>Reference</th>
                                 <th>Supplier</th>
-
                                 <th>Product</th>
-
-                                <th>Quantity</th>
-
+                                <th>Qty</th>
+                                <th>Scheduled</th>
                                 <th>Status</th>
-
-                                <th>Action</th>
-
+                                <th>Actions</th>
                             </tr>
-
                         </thead>
-
-
                         <tbody>
-
                             ${receipts.map(r => {
-
-                                let p =
-                                    getProduct(r.productId);
-
+                                let p = getProduct(r.productId);
+                                let isDone      = r.status === "Done";
+                                let isCancelled = r.status === "Cancelled";
                                 return `
-
                                 <tr>
-
-                                    <td>
-                                        ${r.supplier}
-                                    </td>
-
-                                    <td>
-                                        ${p ? p.name : "Deleted"}
-                                    </td>
-
-                                    <td>
-                                        ${r.quantity}
-                                    </td>
-
-                                    <td>
-                                        <span class="badge blue">
-                                            ${r.status}
-                                        </span>
-                                    </td>
-
-                                    <td>
-
-                                        ${
-                                            r.status !== "Done"
-
-                                            ?
-
-                                            `<button
-                                                class="btn btn-success"
-                                                onclick="validateReceipt(${r.id})">
-
-                                                Validate
-
-                                            </button>`
-
-                                            :
-
-                                            "✓ Completed"
+                                    <td><code style="background:#f3f4f6;padding:3px 7px;border-radius:5px;font-size:12px;">${r.ref || "—"}</code></td>
+                                    <td><b>${r.supplier}</b></td>
+                                    <td>${p ? p.name : "<span style='color:#b42318'>Deleted</span>"}</td>
+                                    <td>${r.quantity} ${p ? p.unit : ""}</td>
+                                    <td style="color:#667085;font-size:13px;">${r.scheduledDate || "—"}</td>
+                                    <td>${receiptBadge(r.status)}</td>
+                                    <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        ${ !isDone && !isCancelled
+                                            ? `<button class="btn btn-success" onclick="validateReceipt(${r.id})" id="btn-validate-receipt-${r.id}">✓ Validate</button>
+                                               <button class="btn btn-danger"  onclick="cancelReceipt(${r.id})"   id="btn-cancel-receipt-${r.id}">✗ Cancel</button>`
+                                            : isDone
+                                                ? `<span style="color:#067647;font-weight:600;">✓ Done</span>`
+                                                : `<span style="color:#b42318;font-weight:600;">Cancelled</span>`
                                         }
-
                                     </td>
-
-                                </tr>
-
-                                `;
-
+                                </tr>`;
                             }).join("")}
-
                         </tbody>
-
                     </table>
-
                 </div>`
-
                 :
-
-                `<div class="empty">
-                    No receipts found.
-                </div>`
+                `<div class="empty">No receipts yet. Click <b>+ New Receipt</b> to create one.</div>`
             }
-
         </div>
 
     `;
-
 }
 
 
 /* =========================================
-   RECEIPT MODAL
+   RECEIPT MODAL  (Prakash – Operations)
 ========================================= */
 
 function openReceiptModal(){
 
-    document.getElementById(
-        "modalContent"
-    ).innerHTML = `
+    let today = new Date().toISOString().split("T")[0];
 
-        <h2>
-            New Receipt
-        </h2>
+    document.getElementById("modalContent").innerHTML = `
 
-        <br>
+        <h2 style="margin-bottom:4px;">📥 New Receipt</h2>
+        <p style="color:#667085;font-size:13px;margin-bottom:20px;">Record incoming stock from a supplier</p>
 
-
-        <form
-            class="form"
-            onsubmit="saveReceipt(event)">
-
+        <form class="form" onsubmit="saveReceipt(event)" id="receipt-form">
 
             <div class="form-group">
-
-                <label>
-                    Supplier
-                </label>
-
-                <input
-                    name="supplier"
-                    required>
-
+                <label>Supplier Name</label>
+                <input name="supplier" placeholder="e.g. ABC Traders" required>
             </div>
 
+            <div class="form-group">
+                <label>Scheduled Date</label>
+                <input type="date" name="scheduledDate" value="${today}">
+            </div>
 
             <div class="form-group">
-
-                <label>
-                    Product
-                </label>
-
+                <label>Product</label>
                 <select name="product">
-
-                    ${products.map(p => `
-
-                        <option value="${p.id}">
-
-                            ${p.name}
-
-                        </option>
-
-                    `).join("")}
-
+                    ${products.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.stock} ${p.unit})</option>`).join("")}
                 </select>
-
             </div>
 
-
             <div class="form-group">
-
-                <label>
-                    Quantity
-                </label>
-
-                <input
-                    type="number"
-                    name="quantity"
-                    min="1"
-                    required>
-
+                <label>Quantity to Receive</label>
+                <input type="number" name="quantity" min="1" placeholder="0" required>
             </div>
 
-
             <div class="form-group">
-
-                <label>
-                    Status
-                </label>
-
+                <label>Initial Status</label>
                 <select name="status">
-
-                    <option>
-                        Draft
-                    </option>
-
-                    <option>
-                        Waiting
-                    </option>
-
-                    <option>
-                        Ready
-                    </option>
-
-                    <option>
-                        Done
-                    </option>
-
+                    <option>Draft</option>
+                    <option>Waiting</option>
+                    <option>Ready</option>
+                    <option selected>Draft</option>
                 </select>
-
             </div>
 
+            <div class="form-group">
+                <label>Destination Warehouse</label>
+                <select name="destWarehouse">
+                    ${warehouses.map(w => `<option>${w}</option>`).join("")}
+                </select>
+            </div>
 
-            <div class="form-group full">
-
-                <button class="btn btn-primary">
-
-                    Save Receipt
-
-                </button>
-
+            <div class="form-group full" style="margin-top:8px;">
+                <button class="btn btn-primary" style="width:100%;padding:12px;">Save Receipt</button>
             </div>
 
         </form>
 
     `;
 
-
-    document.getElementById("modal")
-        .style.display="flex";
-
+    document.getElementById("modal").style.display = "flex";
 }
 
 
@@ -1250,344 +1254,237 @@ function saveReceipt(event){
 
     event.preventDefault();
 
+    let form = new FormData(event.target);
 
-    let form =
-        new FormData(event.target);
+    let qty = Number(form.get("quantity"));
 
+    if(qty <= 0){
+        showToast("Quantity must be greater than 0.", "error");
+        return;
+    }
+
+    let status = form.get("status");
 
     let receipt = {
-
-        id:generateID(),
-
-        supplier:form.get("supplier"),
-
-        productId:Number(
-            form.get("product")
-        ),
-
-        quantity:Number(
-            form.get("quantity")
-        ),
-
-        status:form.get("status")
-
+        id:            generateID(),
+        ref:           nextRef("WH/IN"),
+        supplier:      form.get("supplier"),
+        productId:     Number(form.get("product")),
+        quantity:      qty,
+        scheduledDate: form.get("scheduledDate"),
+        destWarehouse: form.get("destWarehouse"),
+        status:        status,
+        createdAt:     new Date().toLocaleString()
     };
-
 
     receipts.push(receipt);
 
-
-    if(receipt.status === "Done"){
-
-        let p =
-            getProduct(
-                receipt.productId
-            );
-
-
-        p.stock +=
-            receipt.quantity;
-
-
-        addHistory(
-            "Receipt",
-            `Received ${receipt.quantity} ${p.unit} of ${p.name}`
-        );
-
+    // If directly marked Done, apply stock immediately
+    if(status === "Done"){
+        let p = getProduct(receipt.productId);
+        if(p){
+            p.stock += qty;
+            p.location = receipt.destWarehouse;
+            addHistory("Receipt", `[${receipt.ref}] Received ${qty} ${p.unit} of ${p.name} from ${receipt.supplier}`);
+        }
     }
 
-
     saveData();
-
     closeModal();
-
     receiptsPage();
-
+    showToast(`Receipt ${receipt.ref} created successfully.`, "success");
 }
 
 
 function validateReceipt(id){
 
-    let r =
-        receipts.find(
-            x => x.id === id
-        );
+    let r = receipts.find(x => x.id === id);
+    let p = getProduct(r.productId);
 
+    if(!p){
+        showToast("Product no longer exists in the system.", "error");
+        return;
+    }
 
-    let p =
-        getProduct(r.productId);
+    p.stock += r.quantity;
+    if(r.destWarehouse) p.location = r.destWarehouse;
 
+    r.status = "Done";
+    r.validatedAt = new Date().toLocaleString();
 
-    p.stock +=
-        r.quantity;
-
-
-    r.status =
-        "Done";
-
-
-    addHistory(
-        "Receipt Validated",
-        `Received ${r.quantity} ${p.unit} of ${p.name}`
-    );
-
+    addHistory("Receipt Validated", `[${r.ref}] +${r.quantity} ${p.unit} of ${p.name} from ${r.supplier}`);
 
     saveData();
-
     receiptsPage();
+    showToast(`Receipt ${r.ref} validated. Stock updated: +${r.quantity} ${p.unit}.`, "success");
+}
 
+
+function cancelReceipt(id){
+
+    let r = receipts.find(x => x.id === id);
+
+    confirmAction(`Cancel receipt <b>${r.ref}</b> from <b>${r.supplier}</b>? No stock will be added.`, () => {
+
+        r.status = "Cancelled";
+        addHistory("Receipt Cancelled", `[${r.ref}] Cancelled – ${r.supplier}`);
+        saveData();
+        receiptsPage();
+        showToast(`Receipt ${r.ref} has been cancelled.`, "warning");
+
+    });
 }
 
 
 /* =========================================
-   DELIVERY
+   DELIVERIES  (Prakash – Operations)
+   Stock - : Warehouse → Customer
 ========================================= */
 
 function deliveriesPage(){
 
-    let content =
-        document.getElementById("content");
+    let content = document.getElementById("content");
 
+    function deliveryBadge(status){
+        let map = {
+            "Draft":     "badge grey-badge",
+            "Waiting":   "badge yellow",
+            "Ready":     "badge blue",
+            "Done":      "badge green",
+            "Cancelled": "badge red"
+        };
+        return `<span class="${map[status] || "badge blue"}">${status}</span>`;
+    }
 
     content.innerHTML = `
 
         <div class="section-header">
-
-            <h2>
-                Delivery Orders
-            </h2>
-
-            <button
-                class="btn btn-primary"
-                onclick="openDeliveryModal()">
-
+            <div>
+                <h2>📤 Delivery Orders</h2>
+                <p style="color:#667085;font-size:13px;margin-top:4px;">Outgoing stock to customers — Stock −</p>
+            </div>
+            <button class="btn btn-primary" onclick="openDeliveryModal()" id="btn-new-delivery">
                 + New Delivery
-
             </button>
-
         </div>
 
-
         <div class="card">
-
             ${
                 deliveries.length
-
                 ?
-
                 `<div class="table-container">
-
                     <table>
-
                         <thead>
-
                             <tr>
-
+                                <th>Reference</th>
                                 <th>Customer</th>
-
                                 <th>Product</th>
-
-                                <th>Quantity</th>
-
+                                <th>Qty</th>
+                                <th>Scheduled</th>
                                 <th>Status</th>
-
-                                <th>Action</th>
-
+                                <th>Actions</th>
                             </tr>
-
                         </thead>
-
-
                         <tbody>
-
                             ${deliveries.map(d => {
-
-                                let p =
-                                    getProduct(
-                                        d.productId
-                                    );
-
+                                let p = getProduct(d.productId);
+                                let isDone      = d.status === "Done";
+                                let isCancelled = d.status === "Cancelled";
+                                let stockWarning = (p && !isDone && !isCancelled && p.stock < d.quantity)
+                                    ? `<span style="color:#b54708;font-size:12px;"> ⚠ Low stock</span>` : "";
                                 return `
-
                                 <tr>
-
-                                    <td>
-                                        ${d.customer}
-                                    </td>
-
-                                    <td>
-                                        ${p ? p.name : "Deleted"}
-                                    </td>
-
-                                    <td>
-                                        ${d.quantity}
-                                    </td>
-
-                                    <td>
-                                        ${d.status}
-                                    </td>
-
-                                    <td>
-
-                                        ${
-                                            d.status !== "Done"
-
-                                            ?
-
-                                            `<button
-                                                class="btn btn-success"
-                                                onclick="validateDelivery(${d.id})">
-
-                                                Validate
-
-                                            </button>`
-
-                                            :
-
-                                            "✓ Completed"
+                                    <td><code style="background:#f3f4f6;padding:3px 7px;border-radius:5px;font-size:12px;">${d.ref || "—"}</code></td>
+                                    <td><b>${d.customer}</b></td>
+                                    <td>${p ? p.name : "<span style='color:#b42318'>Deleted</span>"}${stockWarning}</td>
+                                    <td>${d.quantity} ${p ? p.unit : ""}</td>
+                                    <td style="color:#667085;font-size:13px;">${d.scheduledDate || "—"}</td>
+                                    <td>${deliveryBadge(d.status)}</td>
+                                    <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        ${ !isDone && !isCancelled
+                                            ? `<button class="btn btn-success" onclick="validateDelivery(${d.id})"  id="btn-validate-delivery-${d.id}">✓ Validate</button>
+                                               <button class="btn btn-danger"  onclick="cancelDelivery(${d.id})"   id="btn-cancel-delivery-${d.id}">✗ Cancel</button>`
+                                            : isDone
+                                                ? `<span style="color:#067647;font-weight:600;">✓ Done</span>`
+                                                : `<span style="color:#b42318;font-weight:600;">Cancelled</span>`
                                         }
-
                                     </td>
-
-                                </tr>
-
-                                `;
-
+                                </tr>`;
                             }).join("")}
-
                         </tbody>
-
                     </table>
-
                 </div>`
-
                 :
-
-                `<div class="empty">
-                    No deliveries found.
-                </div>`
+                `<div class="empty">No deliveries yet. Click <b>+ New Delivery</b> to create one.</div>`
             }
-
         </div>
 
     `;
-
 }
 
 
 /* =========================================
-   DELIVERY MODAL
+   DELIVERY MODAL  (Prakash – Operations)
 ========================================= */
 
 function openDeliveryModal(){
 
-    document.getElementById(
-        "modalContent"
-    ).innerHTML = `
+    let today = new Date().toISOString().split("T")[0];
 
-        <h2>
-            New Delivery Order
-        </h2>
+    document.getElementById("modalContent").innerHTML = `
 
-        <br>
+        <h2 style="margin-bottom:4px;">📤 New Delivery Order</h2>
+        <p style="color:#667085;font-size:13px;margin-bottom:20px;">Send stock out to a customer</p>
 
-
-        <form
-            class="form"
-            onsubmit="saveDelivery(event)">
-
+        <form class="form" onsubmit="saveDelivery(event)" id="delivery-form">
 
             <div class="form-group">
-
-                <label>
-                    Customer
-                </label>
-
-                <input
-                    name="customer"
-                    required>
-
+                <label>Customer Name</label>
+                <input name="customer" placeholder="e.g. XYZ Corp" required>
             </div>
 
+            <div class="form-group">
+                <label>Scheduled Date</label>
+                <input type="date" name="scheduledDate" value="${today}">
+            </div>
 
             <div class="form-group">
-
-                <label>
-                    Product
-                </label>
-
+                <label>Product</label>
                 <select name="product">
-
-                    ${products.map(p => `
-
-                        <option value="${p.id}">
-
-                            ${p.name}
-
-                        </option>
-
-                    `).join("")}
-
+                    ${products.map(p => `<option value="${p.id}">${p.name} (Available: ${p.stock} ${p.unit})</option>`).join("")}
                 </select>
-
             </div>
 
-
             <div class="form-group">
-
-                <label>
-                    Quantity
-                </label>
-
-                <input
-                    type="number"
-                    name="quantity"
-                    min="1"
-                    required>
-
+                <label>Quantity to Deliver</label>
+                <input type="number" name="quantity" min="1" placeholder="0" required>
             </div>
 
+            <div class="form-group">
+                <label>Source Warehouse</label>
+                <select name="srcWarehouse">
+                    ${warehouses.map(w => `<option>${w}</option>`).join("")}
+                </select>
+            </div>
 
             <div class="form-group">
-
-                <label>
-                    Status
-                </label>
-
+                <label>Initial Status</label>
                 <select name="status">
-
                     <option>Draft</option>
-
                     <option>Waiting</option>
-
                     <option>Ready</option>
-
-                    <option>Done</option>
-
                 </select>
-
             </div>
 
-
-            <div class="form-group full">
-
-                <button
-                    class="btn btn-primary">
-
-                    Save Delivery
-
-                </button>
-
+            <div class="form-group full" style="margin-top:8px;">
+                <button class="btn btn-primary" style="width:100%;padding:12px;">Save Delivery</button>
             </div>
 
         </form>
 
     `;
 
-
-    document.getElementById("modal")
-        .style.display="flex";
-
+    document.getElementById("modal").style.display = "flex";
 }
 
 
@@ -1595,403 +1492,252 @@ function saveDelivery(event){
 
     event.preventDefault();
 
+    let form     = new FormData(event.target);
+    let p        = getProduct(form.get("product"));
+    let qty      = Number(form.get("quantity"));
+    let status   = form.get("status");
 
-    let form =
-        new FormData(event.target);
-
-
-    let p =
-        getProduct(
-            form.get("product")
-        );
-
-
-    let quantity =
-        Number(
-            form.get("quantity")
-        );
-
-
-    if(
-        form.get("status") === "Done"
-        &&
-        p.stock < quantity
-    ){
-
-        alert(
-            "Not enough stock!"
-        );
-
+    // Validation
+    if(!p){
+        showToast("Selected product not found.", "error");
         return;
-
     }
 
+    if(qty <= 0){
+        showToast("Quantity must be greater than 0.", "error");
+        return;
+    }
+
+    // Stock-check: only block if trying to validate immediately
+    if(status === "Done" && p.stock < qty){
+        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}, Requested: ${qty} ${p.unit}.`, "error");
+        return;
+    }
 
     let delivery = {
-
-        id:generateID(),
-
-        customer:
-            form.get("customer"),
-
-        productId:
-            Number(form.get("product")),
-
-        quantity:quantity,
-
-        status:
-            form.get("status")
-
+        id:            generateID(),
+        ref:           nextRef("WH/OUT"),
+        customer:      form.get("customer"),
+        productId:     Number(form.get("product")),
+        quantity:      qty,
+        scheduledDate: form.get("scheduledDate"),
+        srcWarehouse:  form.get("srcWarehouse"),
+        status:        status,
+        createdAt:     new Date().toLocaleString()
     };
-
 
     deliveries.push(delivery);
 
-
     if(delivery.status === "Done"){
-
-        p.stock -=
-            quantity;
-
-
-        addHistory(
-            "Delivery",
-            `Delivered ${quantity} ${p.unit} of ${p.name}`
-        );
-
+        p.stock -= qty;
+        addHistory("Delivery", `[${delivery.ref}] Delivered ${qty} ${p.unit} of ${p.name} to ${delivery.customer}`);
     }
 
-
     saveData();
-
     closeModal();
-
     deliveriesPage();
-
+    showToast(`Delivery ${delivery.ref} created successfully.`, "success");
 }
 
 
 function validateDelivery(id){
 
-    let d =
-        deliveries.find(
-            x => x.id === id
-        );
+    let d = deliveries.find(x => x.id === id);
+    let p = getProduct(d.productId);
 
-
-    let p =
-        getProduct(d.productId);
-
-
-    if(p.stock < d.quantity){
-
-        alert(
-            "Not enough stock!"
-        );
-
+    if(!p){
+        showToast("Product no longer exists in the system.", "error");
         return;
-
     }
 
+    if(p.stock < d.quantity){
+        showToast(`Cannot validate: Only ${p.stock} ${p.unit} available, but ${d.quantity} ${p.unit} needed.`, "error");
+        return;
+    }
 
-    p.stock -=
-        d.quantity;
+    p.stock -= d.quantity;
+    d.status = "Done";
+    d.validatedAt = new Date().toLocaleString();
 
-
-    d.status =
-        "Done";
-
-
-    addHistory(
-        "Delivery Validated",
-        `Delivered ${d.quantity} ${p.unit} of ${p.name}`
-    );
-
+    addHistory("Delivery Validated", `[${d.ref}] −${d.quantity} ${p.unit} of ${p.name} → ${d.customer}`);
 
     saveData();
-
     deliveriesPage();
+    showToast(`Delivery ${d.ref} validated. Stock updated: −${d.quantity} ${p.unit}.`, "success");
+}
 
+
+function cancelDelivery(id){
+
+    let d = deliveries.find(x => x.id === id);
+
+    confirmAction(`Cancel delivery <b>${d.ref}</b> to <b>${d.customer}</b>? No stock will be deducted.`, () => {
+
+        d.status = "Cancelled";
+        addHistory("Delivery Cancelled", `[${d.ref}] Cancelled – ${d.customer}`);
+        saveData();
+        deliveriesPage();
+        showToast(`Delivery ${d.ref} has been cancelled.`, "warning");
+
+    });
 }
 
 
 /* =========================================
-   INTERNAL TRANSFER
+   INTERNAL TRANSFERS  (Prakash – Operations)
+   Location A → Location B
 ========================================= */
 
 function transfersPage(){
 
-    let content =
-        document.getElementById("content");
+    let content = document.getElementById("content");
 
+    function transferBadge(status){
+        let map = {
+            "Draft":     "badge grey-badge",
+            "Waiting":   "badge yellow",
+            "Ready":     "badge blue",
+            "Done":      "badge green",
+            "Cancelled": "badge red"
+        };
+        return `<span class="${map[status] || "badge blue"}">${status}</span>`;
+    }
 
     content.innerHTML = `
 
         <div class="section-header">
-
-            <h2>
-                Internal Transfers
-            </h2>
-
-            <button
-                class="btn btn-primary"
-                onclick="openTransferModal()">
-
+            <div>
+                <h2>🔄 Internal Transfers</h2>
+                <p style="color:#667085;font-size:13px;margin-top:4px;">Move stock between locations — A → B</p>
+            </div>
+            <button class="btn btn-primary" onclick="openTransferModal()" id="btn-new-transfer">
                 + New Transfer
-
             </button>
-
         </div>
 
-
         <div class="card">
-
             ${
                 transfers.length
-
                 ?
-
-                `<table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Product</th>
-
-                            <th>Quantity</th>
-
-                            <th>From</th>
-
-                            <th>To</th>
-
-                            <th>Status</th>
-
-                            <th>Action</th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        ${transfers.map(t => {
-
-                            let p =
-                                getProduct(t.productId);
-
-                            return `
-
+                `<div class="table-container">
+                    <table>
+                        <thead>
                             <tr>
-
-                                <td>
-                                    ${p.name}
-                                </td>
-
-                                <td>
-                                    ${t.quantity}
-                                </td>
-
-                                <td>
-                                    ${t.from}
-                                </td>
-
-                                <td>
-                                    ${t.to}
-                                </td>
-
-                                <td>
-                                    ${t.status}
-                                </td>
-
-                                <td>
-
-                                    ${
-                                        t.status !== "Done"
-
-                                        ?
-
-                                        `<button
-                                            class="btn btn-success"
-                                            onclick="validateTransfer(${t.id})">
-
-                                            Validate
-
-                                        </button>`
-
-                                        :
-
-                                        "✓ Completed"
-                                    }
-
-                                </td>
-
+                                <th>Reference</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Scheduled</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
-
-                            `;
-
-                        }).join("")}
-
-                    </tbody>
-
-                </table>`
-
-                :
-
-                `<div class="empty">
-                    No transfers found.
+                        </thead>
+                        <tbody>
+                            ${transfers.map(t => {
+                                let p = getProduct(t.productId);
+                                let isDone      = t.status === "Done";
+                                let isCancelled = t.status === "Cancelled";
+                                return `
+                                <tr>
+                                    <td><code style="background:#f3f4f6;padding:3px 7px;border-radius:5px;font-size:12px;">${t.ref || "—"}</code></td>
+                                    <td>${p ? p.name : "<span style='color:#b42318'>Deleted</span>"}</td>
+                                    <td>${t.quantity} ${p ? p.unit : ""}</td>
+                                    <td>
+                                        <span style="background:#f0f9ff;color:#0369a1;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;">📍 ${t.from}</span>
+                                    </td>
+                                    <td>
+                                        <span style="background:#f0fdf4;color:#166534;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;">📍 ${t.to}</span>
+                                    </td>
+                                    <td style="color:#667085;font-size:13px;">${t.scheduledDate || "—"}</td>
+                                    <td>${transferBadge(t.status)}</td>
+                                    <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        ${ !isDone && !isCancelled
+                                            ? `<button class="btn btn-success" onclick="validateTransfer(${t.id})"  id="btn-validate-transfer-${t.id}">✓ Validate</button>
+                                               <button class="btn btn-danger"  onclick="cancelTransfer(${t.id})"    id="btn-cancel-transfer-${t.id}">✗ Cancel</button>`
+                                            : isDone
+                                                ? `<span style="color:#067647;font-weight:600;">✓ Done</span>`
+                                                : `<span style="color:#b42318;font-weight:600;">Cancelled</span>`
+                                        }
+                                    </td>
+                                </tr>`;
+                            }).join("")}
+                        </tbody>
+                    </table>
                 </div>`
+                :
+                `<div class="empty">No transfers yet. Click <b>+ New Transfer</b> to create one.</div>`
             }
-
         </div>
 
     `;
-
 }
 
 
 /* =========================================
-   TRANSFER MODAL
+   TRANSFER MODAL  (Prakash – Operations)
 ========================================= */
 
 function openTransferModal(){
 
-    document.getElementById(
-        "modalContent"
-    ).innerHTML = `
+    let today = new Date().toISOString().split("T")[0];
 
-        <h2>
-            Internal Transfer
-        </h2>
+    document.getElementById("modalContent").innerHTML = `
 
-        <br>
+        <h2 style="margin-bottom:4px;">🔄 Internal Transfer</h2>
+        <p style="color:#667085;font-size:13px;margin-bottom:20px;">Move stock from one location to another</p>
 
-
-        <form
-            class="form"
-            onsubmit="saveTransfer(event)">
-
+        <form class="form" onsubmit="saveTransfer(event)" id="transfer-form">
 
             <div class="form-group">
-
-                <label>
-                    Product
-                </label>
-
+                <label>Product</label>
                 <select name="product">
-
-                    ${products.map(p => `
-
-                        <option value="${p.id}">
-
-                            ${p.name}
-
-                        </option>
-
-                    `).join("")}
-
+                    ${products.map(p => `<option value="${p.id}">${p.name} @ ${p.location} (${p.stock} ${p.unit})</option>`).join("")}
                 </select>
-
             </div>
 
-
             <div class="form-group">
-
-                <label>
-                    Quantity
-                </label>
-
-                <input
-                    type="number"
-                    name="quantity"
-                    min="1"
-                    required>
-
+                <label>Scheduled Date</label>
+                <input type="date" name="scheduledDate" value="${today}">
             </div>
 
-
             <div class="form-group">
-
-                <label>
-                    From
-                </label>
-
+                <label>From Location</label>
                 <select name="from">
-
-                    ${warehouses.map(w => `
-
-                        <option>
-                            ${w}
-                        </option>
-
-                    `).join("")}
-
+                    ${warehouses.map(w => `<option>${w}</option>`).join("")}
                 </select>
-
             </div>
 
-
             <div class="form-group">
-
-                <label>
-                    To
-                </label>
-
+                <label>To Location</label>
                 <select name="to">
-
-                    ${warehouses.map(w => `
-
-                        <option>
-                            ${w}
-                        </option>
-
-                    `).join("")}
-
+                    ${warehouses.map((w, i) => `<option ${i===1?"selected":""}>${w}</option>`).join("")}
                 </select>
-
             </div>
-
 
             <div class="form-group">
-
-                <label>
-                    Status
-                </label>
-
-                <select name="status">
-
-                    <option>Draft</option>
-
-                    <option>Waiting</option>
-
-                    <option>Ready</option>
-
-                    <option>Done</option>
-
-                </select>
-
+                <label>Quantity</label>
+                <input type="number" name="quantity" min="1" placeholder="0" required>
             </div>
 
+            <div class="form-group">
+                <label>Initial Status</label>
+                <select name="status">
+                    <option>Draft</option>
+                    <option>Waiting</option>
+                    <option>Ready</option>
+                </select>
+            </div>
 
-            <div class="form-group full">
-
-                <button class="btn btn-primary">
-
-                    Save Transfer
-
-                </button>
-
+            <div class="form-group full" style="margin-top:8px;">
+                <button class="btn btn-primary" style="width:100%;padding:12px;">Save Transfer</button>
             </div>
 
         </form>
 
     `;
 
-
-    document.getElementById("modal")
-        .style.display="flex";
-
+    document.getElementById("modal").style.display = "flex";
 }
 
 
@@ -1999,151 +1745,110 @@ function saveTransfer(event){
 
     event.preventDefault();
 
+    let form     = new FormData(event.target);
+    let p        = getProduct(form.get("product"));
+    let from     = form.get("from");
+    let to       = form.get("to");
+    let qty      = Number(form.get("quantity"));
+    let status   = form.get("status");
 
-    let form =
-        new FormData(event.target);
+    // ── Validation ─────────────────────────────────────────────
+    if(!p){
+        showToast("Selected product not found.", "error");
+        return;
+    }
 
-
-    let p =
-        getProduct(
-            form.get("product")
-        );
-
-
-    let from =
-        form.get("from");
-
-
-    let to =
-        form.get("to");
-
-
-    let quantity =
-        Number(
-            form.get("quantity")
-        );
-
+    if(qty <= 0){
+        showToast("Quantity must be greater than 0.", "error");
+        return;
+    }
 
     if(from === to){
-
-        alert(
-            "From and To cannot be same."
-        );
-
+        showToast("Source and destination locations cannot be the same.", "error");
         return;
-
     }
 
-
-    if(
-        form.get("status") === "Done"
-        &&
-        (
-            p.location !== from
-            ||
-            p.stock < quantity
-        )
-    ){
-
-        alert(
-            "Product location or stock is invalid."
-        );
-
+    // Note: We intentionally do NOT require p.location === from
+    // (multi-product-per-location systems allow flexible routing)
+    if(status === "Done" && p.stock < qty){
+        showToast(`Insufficient stock for immediate validation! Available: ${p.stock} ${p.unit}.`, "error");
         return;
-
     }
-
+    // ────────────────────────────────────────────────────────────
 
     let transfer = {
-
-        id:generateID(),
-
-        productId:
-            Number(form.get("product")),
-
-        quantity:quantity,
-
-        from:from,
-
-        to:to,
-
-        status:
-            form.get("status")
-
+        id:            generateID(),
+        ref:           nextRef("WH/INT"),
+        productId:     Number(form.get("product")),
+        quantity:      qty,
+        from:          from,
+        to:            to,
+        scheduledDate: form.get("scheduledDate"),
+        status:        status,
+        createdAt:     new Date().toLocaleString()
     };
-
 
     transfers.push(transfer);
 
-
     if(transfer.status === "Done"){
-
-        p.location =
-            to;
-
-
-        addHistory(
-            "Internal Transfer",
-            `${quantity} ${p.unit} ${p.name}: ${from} → ${to}`
-        );
-
+        // Transfer: stock stays same (just location moves), unless you want to track per-location stock
+        p.location = to;
+        addHistory("Internal Transfer", `[${transfer.ref}] ${qty} ${p.unit} of ${p.name}: ${from} → ${to}`);
     }
 
-
     saveData();
-
     closeModal();
-
     transfersPage();
-
+    showToast(`Transfer ${transfer.ref} created successfully.`, "success");
 }
 
 
 function validateTransfer(id){
 
-    let t =
-        transfers.find(
-            x => x.id === id
-        );
+    let t = transfers.find(x => x.id === id);
+    let p = getProduct(t.productId);
 
-
-    let p =
-        getProduct(t.productId);
-
-
-    if(
-        p.location !== t.from
-        ||
-        p.stock < t.quantity
-    ){
-
-        alert(
-            "Transfer cannot be completed."
-        );
-
+    if(!p){
+        showToast("Product no longer exists in the system.", "error");
         return;
-
     }
 
+    if(t.from === t.to){
+        showToast("Cannot transfer: source and destination are the same location.", "error");
+        return;
+    }
 
-    p.location =
-        t.to;
+    if(p.stock < t.quantity){
+        showToast(`Insufficient stock! Available: ${p.stock} ${p.unit}, Required: ${t.quantity} ${p.unit}.`, "error");
+        return;
+    }
 
+    // Apply the transfer
+    p.location = t.to;
+    t.status   = "Done";
+    t.validatedAt = new Date().toLocaleString();
 
-    t.status =
-        "Done";
-
-
-    addHistory(
-        "Internal Transfer",
-        `${t.quantity} ${p.unit} ${p.name}: ${t.from} → ${t.to}`
-    );
-
+    addHistory("Transfer Validated", `[${t.ref}] ${t.quantity} ${p.unit} of ${p.name}: ${t.from} → ${t.to}`);
 
     saveData();
-
     transfersPage();
+    showToast(`Transfer ${t.ref} validated. ${p.name} moved to ${t.to}.`, "success");
+}
 
+
+function cancelTransfer(id){
+
+    let t = transfers.find(x => x.id === id);
+
+    confirmAction(`Cancel transfer <b>${t.ref}</b>? No stock movement will occur.`, () => {
+
+        t.status = "Cancelled";
+        addHistory("Transfer Cancelled", `[${t.ref}] Cancelled`);
+        saveData();
+        transfersPage();
+        showToast(`Transfer ${t.ref} has been cancelled.`, "warning");
+
+    });
 }
 
 
