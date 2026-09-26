@@ -6,8 +6,10 @@
 
 body{
     font-family:Arial, Helvetica, sans-serif;
-    background:#f5f7fb;
+    background: #f0fdf4 url('background.png') no-repeat center center fixed;
+    background-size: cover;
     color:#172033;
+    min-height: 100vh;
 }
 
 /* =========================================================
@@ -61,8 +63,10 @@ body{
     min-width:145px;
     padding:13px 17px;
     border-radius:13px;
-    background:white;
-    border:1px solid #eaecf0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border:1px solid rgba(234, 236, 240, 0.85);
     box-shadow:0 5px 18px rgba(16,24,40,.05);
     text-align:right;
 }
@@ -99,8 +103,10 @@ body{
     overflow:hidden;
     padding:19px;
     min-height:155px;
-    background:white;
-    border:1px solid #eaecf0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border:1px solid rgba(234, 236, 240, 0.85);
     border-radius:17px;
     box-shadow:0 6px 20px rgba(16,24,40,.055);
     transition:.25s ease;
@@ -267,9 +273,11 @@ body{
     gap:12px;
     text-align:left;
     padding:15px;
-    border:1px solid #eaecf0;
+    border:1px solid rgba(234, 236, 240, 0.85);
     border-radius:14px;
-    background:white;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     cursor:pointer;
     box-shadow:0 4px 15px rgba(16,24,40,.04);
     transition:.25s ease;
@@ -356,8 +364,10 @@ body{
 }
 
 .dashboard-panel{
-    background:white;
-    border:1px solid #eaecf0;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border:1px solid rgba(234, 236, 240, 0.85);
     border-radius:17px;
     box-shadow:0 6px 20px rgba(16,24,40,.045);
     padding:20px;
@@ -841,7 +851,9 @@ body{
 
 .sidebar{
     width:240px;
-    background:#101828;
+    background: rgba(16, 24, 40, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     color:white;
     padding:25px 15px;
 
@@ -849,6 +861,9 @@ body{
     top:0;
     bottom:0;
     left:0;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+    z-index: 100;
 }
 
 .logo{
@@ -902,7 +917,9 @@ body{
 /* HEADER */
 
 header{
-    background:white;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 
     padding:20px 30px;
 
@@ -912,7 +929,8 @@ header{
 
     align-items:center;
 
-    border-bottom:1px solid #e4e7ec;
+    border-bottom:1px solid rgba(228, 231, 236, 0.75);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 }
 
 header h1{
@@ -3383,16 +3401,18 @@ color: transparent;
 /* CARD */
 
 .card{
-    background:white;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
     padding:20px;
 
-    border-radius:12px;
+    border-radius:14px;
 
-    border:1px solid #e4e7ec;
+    border:1px solid rgba(228, 231, 236, 0.75);
 
     box-shadow:
-    0 2px 6px rgba(0,0,0,.04);
+    0 8px 24px rgba(16, 24, 40, 0.05);
 }
 
 .card h3{
