@@ -6,6 +6,7 @@ StockSense is a centralized inventory management system designed to
 streamline stock-related operations within a business.
 
 ## Core Features
+helloooooooo
 
 - User Authentication
 - Inventory Dashboard
