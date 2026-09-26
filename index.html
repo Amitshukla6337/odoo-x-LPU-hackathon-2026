@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>StockSense</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="logo">
+            📦
+            <span>StockSense</span>
+        </div>
+
+        <button onclick="showPage('dashboard')">
+            🏠 Dashboard
+        </button>
+
+        <button onclick="showPage('products')">
+            📦 Products
+        </button>
+
+        <button onclick="showPage('receipts')">
+            📥 Receipts
+        </button>
+
+        <button onclick="showPage('deliveries')">
+            📤 Deliveries
+        </button>
+
+        <button onclick="showPage('transfers')">
+            🔄 Internal Transfers
+        </button>
+
+        <button onclick="showPage('adjustments')">
+            ⚖️ Adjustments
+        </button>
+
+        <button onclick="showPage('history')">
+            📜 Move History
+        </button>
+
+        <button onclick="showPage('warehouse')">
+            🏭 Warehouse
+        </button>
+
+        <button onclick="showPage('profile')">
+            👤 Profile
+        </button>
+
+    </aside>
+
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <header>
+
+            <div>
+                <h1 id="pageTitle">Dashboard</h1>
+                <p>Inventory Management System</p>
+            </div>
+
+            <input
+                type="text"
+                id="search"
+                placeholder="Search..."
+                onkeyup="globalSearch()"
+            >
+
+        </header>
+
+
+        <!-- CONTENT -->
+        <section id="content hello">
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- MODAL -->
+
+<div id="modal" class="modal">
+
+    <div class="modal-box">
+
+        <span class="close" onclick="closeModal()">
+            ×
+        </span>
+
+        <div id="modalContent"></div>
+
+    </div>
+
+</div>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
